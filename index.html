@@ -161,5 +161,25 @@
 
     <script type="module" src="./src/app.js?v=20260517-game-restore-1"></script>
     <script type="module" src="./src/ads.js?v=20260517-fixed-ads-1"></script>
+    <script>
+      (() => {
+        const setupPanel = document.querySelector("#setupPanel");
+        const playPanel = document.querySelector("#playPanel");
+        const resultPanel = document.querySelector("#resultPanel");
+        const settingsForm = document.querySelector("#settingsForm");
+        const playAgainButton = document.querySelector("#playAgainButton");
+        const resultBackButton = document.querySelector("#resultBackButton");
+
+        playAgainButton?.addEventListener("click", () => {
+          settingsForm?.requestSubmit();
+        });
+
+        resultBackButton?.addEventListener("click", () => {
+          playPanel?.classList.add("is-hidden");
+          resultPanel?.classList.add("is-hidden");
+          setupPanel?.classList.remove("is-hidden");
+        });
+      })();
+    </script>
   </body>
 </html>
