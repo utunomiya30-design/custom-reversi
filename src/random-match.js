@@ -81,6 +81,8 @@ let currentMatch = null;
 let started = false;
 let latestRoom = null;
 let applyingMove = false;
+let matchPlayerName = "";
+let lastSyncedName = "";
 
 function updateNameText() {
   const text = NAME_TEXT[els.language?.value] ?? NAME_TEXT.en;
@@ -101,8 +103,12 @@ function clientId() {
   return CLIENT_ID;
 }
 
-function ownName() {
+function readOwnName() {
   return (els.name?.value || "").trim().replace(/\s+/g, " ").slice(0, 16);
+}
+
+function ownName() {
+  return matchPlayerName || readOwnName();
 }
 
 function playerLabel(room, player) {
@@ -154,6 +160,23 @@ function createInitialOnlineState(room) {
     winner: null,
     version: 1,
   };
+}
+
+async function syncOwnName(room) {
+  if (!currentMatch?.seat || !matchPlayerName || lastSyncedName === matchPlayerName) return;
+  const seat = currentMatch.seat;
+  if (room?.playerNames?.[seat] === matchPlayerName) {
+    lastSyncedName = matchPlayerName;
+    return;
+  }
+  lastSyncedName = matchPlayerName;
+  await runTransaction(roomRef(room.id), (current) => {
+    if (!current || current.players?.[seat] !== clientId()) return current;
+    current.playerNames = current.playerNames ?? {};
+    current.playerNames[seat] = matchPlayerName;
+    current.updatedAt = Date.now();
+    return current;
+  });
 }
 
 async function claimSeat(id, ownClientId) {
@@ -354,11 +377,14 @@ function renderScores(room) {
   for (let player = 1; player <= room.rules.playerCount; player += 1) {
     const pill = document.createElement("div");
     pill.className = "score-pill";
-    pill.innerHTML = `
-      <span class="stone-dot" style="background:${PLAYER_COLORS[player]}"></span>
-      <strong>${playerLabel(room, player)}</strong>
-      <span>${values[player]} ${unit}</span>
-    `;
+    const dot = document.createElement("span");
+    dot.className = "stone-dot";
+    dot.style.background = PLAYER_COLORS[player];
+    const label = document.createElement("strong");
+    label.textContent = playerLabel(room, player);
+    const value = document.createElement("span");
+    value.textContent = `${values[player]} ${unit}`;
+    pill.append(dot, label, value);
     els.scores.append(pill);
   }
 }
@@ -435,7 +461,12 @@ function renderResult(room) {
   els.ranks?.replaceChildren();
   for (const [index, entry] of ranking.entries()) {
     const item = document.createElement("li");
-    item.innerHTML = `<span>${index + 1}位 ${playerLabel(room, entry.player)}</span><span class="rank-value">${entry.value} ${unit}</span>`;
+    const label = document.createElement("span");
+    label.textContent = `${index + 1}位 ${playerLabel(room, entry.player)}`;
+    const value = document.createElement("span");
+    value.className = "rank-value";
+    value.textContent = `${entry.value} ${unit}`;
+    item.append(label, value);
     els.ranks?.append(item);
   }
 
@@ -449,6 +480,7 @@ function attachRoomListeners() {
     const room = snapshot.val();
     if (!room) return;
     latestRoom = room;
+    await syncOwnName(room);
     const count = joinedCount(room);
     if (!started) setStatus(`対戦相手を探しています... ${count}/${room.rules.playerCount}`);
     await initializeRoomIfReady(room);
@@ -459,6 +491,8 @@ function attachRoomListeners() {
 
 els.button?.addEventListener("click", async () => {
   els.button.disabled = true;
+  matchPlayerName = readOwnName();
+  lastSyncedName = "";
   setStatus("対戦相手を探しています...");
   try {
     currentMatch = await findOrCreateMatch();
