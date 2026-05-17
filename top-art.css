@@ -49,6 +49,15 @@ input[type="file"],
   background-color: #f1eadc !important;
 }
 
+.online-actions {
+  grid-template-columns: auto auto minmax(160px, 1fr) auto;
+}
+
+#randomMatchButton {
+  border-color: #d29a3a;
+  background: #fff8e8;
+}
+
 .ad-slot {
   width: min(728px, 100%);
   min-height: 90px;
@@ -84,6 +93,10 @@ input[type="file"],
     top: 156px;
     width: min(680px, 116vw);
     opacity: 1;
+  }
+
+  .online-actions {
+    grid-template-columns: 1fr;
   }
 
   .ad-slot {
