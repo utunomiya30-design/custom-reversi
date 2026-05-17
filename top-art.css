@@ -4,7 +4,7 @@ body::before {
 
 .title-block {
   position: relative;
-  min-height: 840px;
+  min-height: 900px;
   padding: 18px 0 0;
   isolation: isolate;
 }
@@ -51,7 +51,7 @@ input[type="file"],
 
 @media (max-width: 820px) {
   .title-block {
-    min-height: 760px;
+    min-height: 720px;
   }
 
   .title-block::before {
