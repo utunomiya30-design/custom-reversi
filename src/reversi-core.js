@@ -44,10 +44,10 @@ function getInitialPositions(size, playerCount) {
 
   if (playerCount === 3) {
     return mapSeedPattern(size, [
-      [0, 3, 2, 0],
-      [1, 0, 0, 0],
-      [0, 1, 3, 0],
-      [0, 2, 0, 0],
+      [1, 2, 3, 0],
+      [2, 3, 1, 0],
+      [3, 1, 2, 0],
+      [0, 0, 0, 0],
     ]);
   }
 
