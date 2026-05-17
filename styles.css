@@ -33,6 +33,14 @@ body {
     sans-serif;
 }
 
+body::before {
+  background-position: left -28px top 150px !important;
+  background-size: min(820px, 82vw) auto !important;
+  opacity: 0.34 !important;
+  filter: blur(1px) saturate(0.98) contrast(1.04) !important;
+  transform: scale(1.12) !important;
+}
+
 button,
 select,
 input {
