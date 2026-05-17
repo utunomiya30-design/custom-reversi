@@ -89,6 +89,8 @@ button:hover {
 }
 
 .title-block {
+  display: grid;
+  gap: 18px;
   padding: 18px 0 0;
 }
 
@@ -120,11 +122,29 @@ h2 {
   letter-spacing: 0;
 }
 
-.title-block p:last-child {
+.title-block p[data-i18n="lead"] {
   max-width: 36rem;
   color: var(--muted);
   font-size: 1.02rem;
   line-height: 1.75;
+}
+
+.top-visual {
+  width: min(100%, 520px);
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.top-visual img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  object-position: center 42%;
 }
 
 .settings-grid {
@@ -260,7 +280,6 @@ input[type="file"] {
   flex: 0 0 auto;
   border: 1px solid rgba(0, 0, 0, 0.28);
   border-radius: 50%;
-  filter: saturate(1.35) contrast(1.1);
 }
 
 .board-wrap {
@@ -279,7 +298,6 @@ canvas {
   display: block;
   width: 100%;
   height: 100%;
-  filter: saturate(1.22) contrast(1.08);
   touch-action: manipulation;
 }
 
