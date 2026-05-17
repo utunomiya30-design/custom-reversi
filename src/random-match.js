@@ -49,10 +49,10 @@ function setStatus(message) {
 
 function clientId() {
   const key = "custom-reversi-random-client";
-  const existing = localStorage.getItem(key);
+  const existing = sessionStorage.getItem(key);
   if (existing) return existing;
   const next = crypto.randomUUID();
-  localStorage.setItem(key, next);
+  sessionStorage.setItem(key, next);
   return next;
 }
 
