@@ -23,6 +23,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const WAITING_ROOM_TTL = 1000 * 60 * 10;
+const CLIENT_ID = crypto.randomUUID();
 
 const els = {
   button: document.querySelector("#randomMatchButton"),
@@ -48,12 +49,7 @@ function setStatus(message) {
 }
 
 function clientId() {
-  const key = "custom-reversi-random-client";
-  const existing = sessionStorage.getItem(key);
-  if (existing) return existing;
-  const next = crypto.randomUUID();
-  sessionStorage.setItem(key, next);
-  return next;
+  return CLIENT_ID;
 }
 
 function roomId() {
