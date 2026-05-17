@@ -4,13 +4,26 @@ body::before {
 
 .title-block {
   position: relative;
-  min-height: auto;
+  min-height: 470px;
   padding: 18px 0 0;
   isolation: isolate;
 }
 
 .title-block::before {
-  display: none !important;
+  content: "";
+  position: absolute;
+  left: -34px;
+  top: 126px;
+  z-index: -1;
+  width: min(760px, 76vw);
+  aspect-ratio: 120 / 103;
+  border-radius: 8px;
+  background-image: url("./top-bg.jpg?v=title-bg-hq-20260517");
+  background-size: cover;
+  background-position: center;
+  opacity: 1;
+  filter: saturate(1.05) contrast(1.02);
+  box-shadow: 0 18px 54px rgba(48, 41, 30, 0.08);
 }
 
 .title-block > * {
@@ -34,4 +47,17 @@ input[type="file"],
 input[type="file"],
 .online-panel {
   background-color: #f1eadc !important;
+}
+
+@media (max-width: 820px) {
+  .title-block {
+    min-height: 360px;
+  }
+
+  .title-block::before {
+    left: -28px;
+    top: 118px;
+    width: min(680px, 116vw);
+    opacity: 1;
+  }
 }
