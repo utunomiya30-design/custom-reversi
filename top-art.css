@@ -45,6 +45,20 @@ input[type="file"],
   opacity: 1;
 }
 
+.setup-intro {
+  grid-column: 1 / -1;
+  position: relative;
+  z-index: 2;
+  margin: 0 0 2px;
+  padding: 16px 18px;
+  border: 1px solid #d7c6a9;
+  border-radius: 10px;
+  background: #f1eadc;
+  color: #4f473d;
+  font-size: 0.98rem;
+  line-height: 1.7;
+}
+
 input[type="text"] {
   width: 100%;
   min-height: 66px;
@@ -115,6 +129,11 @@ input[type="file"],
 
   .online-actions {
     grid-template-columns: 1fr;
+  }
+
+  .setup-intro {
+    padding: 14px 16px;
+    font-size: 0.95rem;
   }
 
   .ad-slot {
