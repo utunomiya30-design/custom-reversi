@@ -43,20 +43,45 @@ function getInitialPositions(size, playerCount) {
   }
 
   if (playerCount === 3) {
-    return [
-      { row: low, col: low, player: 1 },
-      { row: low, col: high, player: 2 },
-      { row: high, col: low, player: 3 },
-      { row: high, col: high, player: 1 },
-    ];
+    return mapSeedPattern(size, [
+      [0, 3, 2, 0],
+      [1, 0, 0, 0],
+      [0, 1, 3, 0],
+      [0, 2, 0, 0],
+    ]);
   }
 
-  return [
-    { row: low, col: low, player: 1 },
-    { row: low, col: high, player: 2 },
-    { row: high, col: low, player: 3 },
-    { row: high, col: high, player: 4 },
-  ];
+  if (size === 4) {
+    return mapSeedPattern(size, [
+      [3, 0, 0, 4],
+      [0, 2, 0, 0],
+      [0, 1, 0, 0],
+      [3, 4, 2, 1],
+    ]);
+  }
+
+  return mapSeedPattern(size, [
+    [0, 0, 1, 4],
+    [2, 4, 3, 0],
+    [0, 1, 0, 0],
+    [2, 0, 3, 0],
+  ]);
+}
+
+function mapSeedPattern(size, pattern) {
+  const start = size / 2 - 2;
+  const positions = [];
+
+  for (let row = 0; row < pattern.length; row += 1) {
+    for (let col = 0; col < pattern[row].length; col += 1) {
+      const player = pattern[row][col];
+      if (player !== EMPTY) {
+        positions.push({ row: start + row, col: start + col, player });
+      }
+    }
+  }
+
+  return positions;
 }
 
 function createInitialBoard({
