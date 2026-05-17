@@ -4,7 +4,7 @@ body::before {
 
 .title-block {
   position: relative;
-  min-height: 470px;
+  min-height: 500px;
   padding: 18px 0 0;
   isolation: isolate;
 }
@@ -13,7 +13,7 @@ body::before {
   content: "";
   position: absolute;
   left: -34px;
-  top: 126px;
+  top: 168px;
   z-index: -1;
   width: min(760px, 76vw);
   aspect-ratio: 120 / 103;
@@ -51,12 +51,12 @@ input[type="file"],
 
 @media (max-width: 820px) {
   .title-block {
-    min-height: 360px;
+    min-height: 400px;
   }
 
   .title-block::before {
     left: -28px;
-    top: 118px;
+    top: 156px;
     width: min(680px, 116vw);
     opacity: 1;
   }
