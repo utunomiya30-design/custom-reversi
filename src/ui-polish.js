@@ -107,6 +107,26 @@ const selectors = {
   gameOnlineStatus: "#gameOnlineStatus",
 };
 
+const waitingTerms = [
+  "探しています",
+  "Waiting",
+  "Recherche",
+  "Buscando",
+  "gesucht",
+  "찾는 중",
+  "寻找",
+];
+
+const roomTerms = [
+  "Room:",
+  "部屋",
+  "Salon",
+  "Sala",
+  "Raum",
+  "방:",
+  "房间",
+];
+
 function $(selector) {
   return document.querySelector(selector);
 }
@@ -182,12 +202,16 @@ function updateScoreFocus() {
   }
 }
 
+function includesAny(content, terms) {
+  return terms.some((term) => content.includes(term));
+}
+
 function updateStatusTone() {
   for (const node of [$(selectors.onlineStatus), $(selectors.gameOnlineStatus)]) {
     if (!node) continue;
     const content = node.textContent || "";
-    const waiting = /探しています|Waiting|Recherche|Buscando|gesucht|찾는 중|寻找/.test(content);
-    const room = /Room:|部屋|Salon|Sala|Raum|방:|房间/.test(content);
+    const waiting = includesAny(content, waitingTerms);
+    const room = includesAny(content, roomTerms);
     if (node.classList.contains("is-waiting") !== waiting) node.classList.toggle("is-waiting", waiting);
     if (node.classList.contains("is-room") !== room) node.classList.toggle("is-room", room);
   }
