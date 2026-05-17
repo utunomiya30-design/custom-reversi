@@ -8,7 +8,7 @@
     <meta property="og:description" content="一瞬でカオスなリバーシが始まるURL。">
     <title>カスタム・リバーシ</title>
     <link rel="stylesheet" href="./styles.css?v=soft-bg-clear-20260517">
-    <link rel="stylesheet" href="./top-art.css?v=title-art-fixed-ads-20260517">
+    <link rel="stylesheet" href="./top-art.css?v=title-art-names-20260517">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1361559686394936" crossorigin="anonymous"></script>
     <script>
       window.CUSTOM_REVERSI_ADS = {
@@ -93,6 +93,11 @@
           </label>
 
           <label>
+            <span>あなたの名前</span>
+            <input id="playerNameInput" type="text" maxlength="16" autocomplete="nickname" placeholder="例: おぎ">
+          </label>
+
+          <label>
             <span data-i18n="backgroundLabel">背景画像</span>
             <input id="backgroundInput" type="file" accept="image/png,image/jpeg">
           </label>
@@ -162,7 +167,7 @@
 
     <script type="module" src="./src/app.js?v=20260517-game-restore-1"></script>
     <script type="module" src="./src/ads.js?v=20260517-fixed-ads-1"></script>
-    <script type="module" src="./src/random-match.js?v=20260517-random-match-5"></script>
+    <script type="module" src="./src/random-match.js?v=20260517-random-match-6"></script>
     <script>
       (() => {
         const setupPanel = document.querySelector("#setupPanel");
