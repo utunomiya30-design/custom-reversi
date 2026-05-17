@@ -7,40 +7,7 @@
     <meta property="og:title" content="カスタム・リバーシ">
     <meta property="og:description" content="一瞬でカオスなリバーシが始まるURL。">
     <title>カスタム・リバーシ</title>
-    <link rel="stylesheet" href="./styles.css?v=soft-bg-visual-20260517">
-    <style>
-      body {
-        position: relative;
-        overflow-x: hidden;
-      }
-
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        z-index: 0;
-        pointer-events: none;
-        background-image: url("data:image/jpeg;base64,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");
-        background-repeat: no-repeat;
-        background-position: left 18px top 92px;
-        background-size: min(720px, 72vw) auto;
-        opacity: 0.16;
-        filter: blur(2px) saturate(0.92);
-        transform: scale(1.08);
-        transform-origin: left top;
-      }
-
-      .app-shell {
-        position: relative;
-        z-index: 1;
-      }
-
-      @media (max-width: 820px) {
-        body::before {
-          display: none;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="./styles.css?v=soft-bg-strong-20260517">
   </head>
   <body>
     <main class="app-shell">
