@@ -43,6 +43,15 @@ const PLAYER_COLORS = {
   4: "#176cff",
 };
 const PLAYER_LABELS = ["", "1P 黒", "2P 白", "3P 赤", "4P 青"];
+const NAME_TEXT = {
+  ja: { label: "あなたの名前", placeholder: "例: おぎ" },
+  en: { label: "Your name", placeholder: "e.g. Ogi" },
+  fr: { label: "Votre nom", placeholder: "ex. Ogi" },
+  es: { label: "Tu nombre", placeholder: "p. ej. Ogi" },
+  de: { label: "Dein Name", placeholder: "z. B. Ogi" },
+  ko: { label: "내 이름", placeholder: "예: Ogi" },
+  zh: { label: "你的名字", placeholder: "例如：Ogi" },
+};
 
 const els = {
   button: document.querySelector("#randomMatchButton"),
@@ -62,7 +71,9 @@ const els = {
   win: document.querySelector("#winModeSelect"),
   corner: document.querySelector("#cornerBoostSelect"),
   cpu: document.querySelector("#cpuModeSelect"),
+  language: document.querySelector("#languageSelect"),
   name: document.querySelector("#playerNameInput"),
+  nameLabel: document.querySelector("#playerNameInput")?.closest("label")?.querySelector("span"),
 };
 
 const ctx = els.canvas?.getContext("2d");
@@ -70,6 +81,12 @@ let currentMatch = null;
 let started = false;
 let latestRoom = null;
 let applyingMove = false;
+
+function updateNameText() {
+  const text = NAME_TEXT[els.language?.value] ?? NAME_TEXT.en;
+  if (els.nameLabel) els.nameLabel.textContent = text.label;
+  if (els.name) els.name.placeholder = text.placeholder;
+}
 
 function setStatus(message) {
   if (els.status) els.status.textContent = message;
@@ -100,7 +117,7 @@ function roomId() {
 
 function rules() {
   return {
-    language: document.querySelector("#languageSelect")?.value || "ja",
+    language: els.language?.value || "ja",
     playerCount: Number(els.players?.value) || 2,
     boardSize: Number(els.board?.value) || 8,
     winMode: els.win?.value || "classic",
@@ -465,3 +482,6 @@ els.canvas?.addEventListener("click", (event) => {
   if (!cell) return;
   submitMove(cell.row, cell.col);
 }, true);
+
+els.language?.addEventListener("change", updateNameText);
+updateNameText();
