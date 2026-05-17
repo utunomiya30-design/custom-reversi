@@ -33,8 +33,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const WAITING_ROOM_TTL = 1000 * 60 * 10;
-const RANDOM_QUEUE_PATH = "randomQueueV3";
-const RANDOM_ROOMS_PATH = "randomRoomsV3";
+const RANDOM_QUEUE_PATH = "randomQueueV4";
+const RANDOM_ROOMS_PATH = "randomRoomsV4";
 const CLIENT_ID = crypto.randomUUID();
 const PLAYER_COLORS = {
   1: "#141414",
@@ -62,6 +62,7 @@ const els = {
   win: document.querySelector("#winModeSelect"),
   corner: document.querySelector("#cornerBoostSelect"),
   cpu: document.querySelector("#cpuModeSelect"),
+  name: document.querySelector("#playerNameInput"),
 };
 
 const ctx = els.canvas?.getContext("2d");
@@ -81,6 +82,15 @@ function roomRef(roomId = currentMatch?.roomId) {
 
 function clientId() {
   return CLIENT_ID;
+}
+
+function ownName() {
+  return (els.name?.value || "").trim().replace(/\s+/g, " ").slice(0, 16);
+}
+
+function playerLabel(room, player) {
+  const name = room?.playerNames?.[player]?.trim();
+  return name ? `${PLAYER_LABELS[player]} ${name}` : PLAYER_LABELS[player];
 }
 
 function roomId() {
@@ -142,13 +152,18 @@ async function claimSeat(id, ownClientId) {
     const existing = Object.entries(room.players ?? {}).find(([, value]) => value === ownClientId);
     if (existing) {
       seat = Number(existing[0]);
+      room.playerNames = room.playerNames ?? {};
+      room.playerNames[seat] = ownName();
+      room.updatedAt = Date.now();
       return room;
     }
 
     room.players = room.players ?? {};
+    room.playerNames = room.playerNames ?? {};
     for (let player = 1; player <= room.rules.playerCount; player += 1) {
       if (!room.players[player]) {
         room.players[player] = ownClientId;
+        room.playerNames[player] = ownName();
         room.updatedAt = Date.now();
         seat = player;
         break;
@@ -166,6 +181,7 @@ async function createWaitingRoom(value, ownClientId, key) {
     id,
     rules: value,
     players: { 1: ownClientId },
+    playerNames: { 1: ownName() },
     board: null,
     currentPlayer: 1,
     finished: false,
@@ -215,7 +231,7 @@ function startGameOnce(room) {
   started = true;
   if (els.cpu) els.cpu.value = "none";
   els.form?.requestSubmit();
-  setStatus(`マッチ成立: ${currentMatch.roomId.toUpperCase()} / あなたは ${currentMatch.seat}P`);
+  setStatus(`マッチ成立: ${currentMatch.roomId.toUpperCase()} / あなたは ${playerLabel(room, currentMatch.seat)}`);
   renderRoom(room);
 }
 
@@ -244,18 +260,18 @@ function formatCell(row, col) {
   return `${String.fromCharCode(65 + col)}${row + 1}`;
 }
 
-function formatMoveMessage(player, row, col) {
-  return `${PLAYER_LABELS[player]} ${formatCell(row, col)} に置きました`;
+function formatMoveMessage(room, player, row, col) {
+  return `${playerLabel(room, player)} ${formatCell(row, col)} に置きました`;
 }
 
-function formatPassMessage(player) {
-  return `${PLAYER_LABELS[player]} は置けないためパス`;
+function formatPassMessage(room, player) {
+  return `${playerLabel(room, player)} は置けないためパス`;
 }
 
 async function submitMove(row, col) {
   if (!currentMatch || !latestRoom || latestRoom.finished || applyingMove) return;
   if (latestRoom.currentPlayer !== currentMatch.seat) {
-    setStatus(`あなたは ${PLAYER_LABELS[currentMatch.seat]} / 現在は ${PLAYER_LABELS[latestRoom.currentPlayer]} のターンです`);
+    setStatus(`あなたは ${playerLabel(latestRoom, currentMatch.seat)} / 現在は ${playerLabel(latestRoom, latestRoom.currentPlayer)} のターンです`);
     return;
   }
 
@@ -270,9 +286,9 @@ async function submitMove(row, col) {
       if (!result.ok) return room;
 
       const next = getNextPlayer(result.board, previousPlayer, room.rules.playerCount);
-      const messages = [formatMoveMessage(previousPlayer, row, col)];
+      const messages = [formatMoveMessage(room, previousPlayer, row, col)];
       for (const player of getPassedPlayers(previousPlayer, next.player, room.rules.playerCount)) {
-        messages.push(formatPassMessage(player));
+        messages.push(formatPassMessage(room, player));
       }
 
       room.board = result.board;
@@ -307,11 +323,11 @@ function renderRoom(room) {
     els.play?.classList.remove("is-hidden");
   }
 
-  if (els.turn) els.turn.textContent = `${PLAYER_LABELS[room.currentPlayer]} のターン`;
+  if (els.turn) els.turn.textContent = `${playerLabel(room, room.currentPlayer)} のターン`;
   if (els.log) els.log.textContent = room.lastMessage ?? "";
   renderScores(room);
   drawBoard(room);
-  setStatus(`あなたは ${PLAYER_LABELS[currentMatch.seat]} / Room: ${room.id.toUpperCase()}`);
+  setStatus(`あなたは ${playerLabel(room, currentMatch.seat)} / Room: ${room.id.toUpperCase()}`);
 }
 
 function renderScores(room) {
@@ -327,7 +343,7 @@ function renderScores(room) {
     pill.className = "score-pill";
     pill.innerHTML = `
       <span class="stone-dot" style="background:${PLAYER_COLORS[player]}"></span>
-      <strong>${PLAYER_LABELS[player]}</strong>
+      <strong>${playerLabel(room, player)}</strong>
       <span>${values[player]} ${unit}</span>
     `;
     els.scores.append(pill);
@@ -406,7 +422,7 @@ function renderResult(room) {
   els.ranks?.replaceChildren();
   for (const [index, entry] of ranking.entries()) {
     const item = document.createElement("li");
-    item.innerHTML = `<span>${index + 1}位 ${PLAYER_LABELS[entry.player]}</span><span class="rank-value">${entry.value} ${unit}</span>`;
+    item.innerHTML = `<span>${index + 1}位 ${playerLabel(room, entry.player)}</span><span class="rank-value">${entry.value} ${unit}</span>`;
     els.ranks?.append(item);
   }
 
