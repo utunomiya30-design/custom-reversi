@@ -33,8 +33,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const WAITING_ROOM_TTL = 1000 * 60 * 10;
-const RANDOM_QUEUE_PATH = "randomQueueV4";
-const RANDOM_ROOMS_PATH = "randomRoomsV4";
+const RANDOM_QUEUE_PATH = "randomQueueV5/current";
+const RANDOM_ROOMS_PATH = "randomRoomsV5";
 const CLIENT_ID = crypto.randomUUID();
 const PLAYER_COLORS = {
   1: "#141414",
@@ -126,18 +126,13 @@ function rules() {
   };
 }
 
-function matchKey(value) {
-  const normalized = {
-    playerCount: value.playerCount,
-    boardSize: value.boardSize,
-    winMode: value.winMode,
-    cornerBoostPlayer: value.cornerBoostPlayer ?? null,
-    cpuMode: "none",
-  };
-  return btoa(unescape(encodeURIComponent(JSON.stringify(normalized))))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+function applyRoomRulesToControls(roomRules) {
+  if (!roomRules) return;
+  if (els.players) els.players.value = String(roomRules.playerCount);
+  if (els.board) els.board.value = String(roomRules.boardSize);
+  if (els.win) els.win.value = roomRules.winMode;
+  if (els.corner) els.corner.value = roomRules.cornerBoostPlayer ? String(roomRules.cornerBoostPlayer) : "";
+  if (els.cpu) els.cpu.value = "none";
 }
 
 function joinedCount(room) {
@@ -192,8 +187,9 @@ async function claimSeat(id, ownClientId) {
   return seat;
 }
 
-async function createWaitingRoom(value, ownClientId, key) {
+async function createWaitingRoom(value, ownClientId) {
   const id = roomId();
+  const now = Date.now();
   const room = {
     id,
     rules: value,
@@ -204,19 +200,18 @@ async function createWaitingRoom(value, ownClientId, key) {
     finished: false,
     lastMessage: "",
     version: 0,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+    createdAt: now,
+    updatedAt: now,
   };
   await set(ref(database, `${RANDOM_ROOMS_PATH}/${id}`), room);
-  await set(ref(database, `${RANDOM_QUEUE_PATH}/${key}`), { roomId: id, createdAt: Date.now() });
+  await set(ref(database, RANDOM_QUEUE_PATH), { roomId: id, createdAt: now });
   return { roomId: id, seat: 1 };
 }
 
 async function findOrCreateMatch() {
   const value = rules();
-  const key = matchKey(value);
   const ownClientId = clientId();
-  const queueRef = ref(database, `${RANDOM_QUEUE_PATH}/${key}`);
+  const queueRef = ref(database, RANDOM_QUEUE_PATH);
   const queued = (await get(queueRef)).val();
 
   if (queued?.roomId && Date.now() - queued.createdAt < WAITING_ROOM_TTL) {
@@ -228,7 +223,8 @@ async function findOrCreateMatch() {
     }
   }
 
-  return createWaitingRoom(value, ownClientId, key);
+  await remove(queueRef);
+  return createWaitingRoom(value, ownClientId);
 }
 
 async function initializeRoomIfReady(room) {
@@ -246,7 +242,7 @@ async function initializeRoomIfReady(room) {
 function startGameOnce(room) {
   if (started || !room || joinedCount(room) < room.rules.playerCount || !room.board) return;
   started = true;
-  if (els.cpu) els.cpu.value = "none";
+  applyRoomRulesToControls(room.rules);
   els.form?.requestSubmit();
   setStatus(`マッチ成立: ${currentMatch.roomId.toUpperCase()} / あなたは ${playerLabel(room, currentMatch.seat)}`);
   renderRoom(room);
