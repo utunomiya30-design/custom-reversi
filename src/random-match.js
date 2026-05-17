@@ -3,12 +3,22 @@ import {
   get,
   getDatabase,
   onValue,
-  push,
   ref,
   remove,
   runTransaction,
   set,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import {
+  EMPTY,
+  applyMove,
+  countStones,
+  createInitialBoard,
+  createScoreMap,
+  getLegalMoves,
+  getNextPlayer,
+  rankPlayers,
+  scoreBoard,
+} from "./reversi-core.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAIiqR-0frAfSNlMeXNfUqwNPs2fgsVQBw",
@@ -23,17 +33,30 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const WAITING_ROOM_TTL = 1000 * 60 * 10;
-const RANDOM_QUEUE_PATH = "randomQueueV2";
-const RANDOM_ROOMS_PATH = "randomRoomsV2";
+const RANDOM_QUEUE_PATH = "randomQueueV3";
+const RANDOM_ROOMS_PATH = "randomRoomsV3";
 const CLIENT_ID = crypto.randomUUID();
+const PLAYER_COLORS = {
+  1: "#141414",
+  2: "#f7f3ea",
+  3: "#f02f2f",
+  4: "#176cff",
+};
+const PLAYER_LABELS = ["", "1P 黒", "2P 白", "3P 赤", "4P 青"];
 
 const els = {
   button: document.querySelector("#randomMatchButton"),
   status: document.querySelector("#onlineStatus"),
+  gameStatus: document.querySelector("#gameOnlineStatus"),
   form: document.querySelector("#settingsForm"),
   setup: document.querySelector("#setupPanel"),
   play: document.querySelector("#playPanel"),
+  result: document.querySelector("#resultPanel"),
   canvas: document.querySelector("#gameCanvas"),
+  turn: document.querySelector("#turnLabel"),
+  log: document.querySelector("#moveLog"),
+  scores: document.querySelector("#scoreRow"),
+  ranks: document.querySelector("#rankingList"),
   players: document.querySelector("#playerCountSelect"),
   board: document.querySelector("#boardSizeSelect"),
   win: document.querySelector("#winModeSelect"),
@@ -41,13 +64,19 @@ const els = {
   cpu: document.querySelector("#cpuModeSelect"),
 };
 
+const ctx = els.canvas?.getContext("2d");
 let currentMatch = null;
 let started = false;
-let replayingRemoteMove = false;
-const appliedRemoteMoves = new Set();
+let latestRoom = null;
+let applyingMove = false;
 
 function setStatus(message) {
   if (els.status) els.status.textContent = message;
+  if (els.gameStatus && started) els.gameStatus.textContent = message;
+}
+
+function roomRef(roomId = currentMatch?.roomId) {
+  return ref(database, `${RANDOM_ROOMS_PATH}/${roomId}`);
 }
 
 function clientId() {
@@ -61,6 +90,7 @@ function roomId() {
 
 function rules() {
   return {
+    language: document.querySelector("#languageSelect")?.value || "ja",
     playerCount: Number(els.players?.value) || 2,
     boardSize: Number(els.board?.value) || 8,
     winMode: els.win?.value || "classic",
@@ -70,7 +100,14 @@ function rules() {
 }
 
 function matchKey(value) {
-  return btoa(unescape(encodeURIComponent(JSON.stringify(value))))
+  const normalized = {
+    playerCount: value.playerCount,
+    boardSize: value.boardSize,
+    winMode: value.winMode,
+    cornerBoostPlayer: value.cornerBoostPlayer ?? null,
+    cpuMode: "none",
+  };
+  return btoa(unescape(encodeURIComponent(JSON.stringify(normalized))))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
@@ -80,10 +117,26 @@ function joinedCount(room) {
   return Object.values(room?.players ?? {}).filter(Boolean).length;
 }
 
+function createInitialOnlineState(room) {
+  const board = createInitialBoard({
+    size: room.rules.boardSize,
+    playerCount: room.rules.playerCount,
+    cornerBoostPlayer: room.rules.cornerBoostPlayer,
+  });
+  const next = getNextPlayer(board, room.rules.playerCount, room.rules.playerCount);
+  return {
+    board,
+    currentPlayer: next.player ?? 1,
+    finished: false,
+    lastMessage: "ゲーム開始",
+    winner: null,
+    version: 1,
+  };
+}
+
 async function claimSeat(id, ownClientId) {
   let seat = null;
-  const roomRef = ref(database, `${RANDOM_ROOMS_PATH}/${id}`);
-  await runTransaction(roomRef, (room) => {
+  await runTransaction(ref(database, `${RANDOM_ROOMS_PATH}/${id}`), (room) => {
     if (!room) return room;
 
     const existing = Object.entries(room.players ?? {}).find(([, value]) => value === ownClientId);
@@ -113,6 +166,11 @@ async function createWaitingRoom(value, ownClientId, key) {
     id,
     rules: value,
     players: { 1: ownClientId },
+    board: null,
+    currentPlayer: 1,
+    finished: false,
+    lastMessage: "",
+    version: 0,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
@@ -140,52 +198,233 @@ async function findOrCreateMatch() {
   return createWaitingRoom(value, ownClientId, key);
 }
 
+async function initializeRoomIfReady(room) {
+  if (!room || room.board || joinedCount(room) < room.rules.playerCount) return;
+  await runTransaction(roomRef(room.id), (current) => {
+    if (!current || current.board || joinedCount(current) < current.rules.playerCount) return current;
+    return {
+      ...current,
+      ...createInitialOnlineState(current),
+      updatedAt: Date.now(),
+    };
+  });
+}
+
 function startGameOnce(room) {
-  if (started || !room || joinedCount(room) < room.rules.playerCount) return;
+  if (started || !room || joinedCount(room) < room.rules.playerCount || !room.board) return;
   started = true;
   if (els.cpu) els.cpu.value = "none";
   els.form?.requestSubmit();
   setStatus(`マッチ成立: ${currentMatch.roomId.toUpperCase()} / あなたは ${currentMatch.seat}P`);
+  renderRoom(room);
 }
 
 function cellFromEvent(event) {
+  if (!els.canvas || !latestRoom) return null;
   const rect = els.canvas.getBoundingClientRect();
-  const size = Number(els.board?.value) || 8;
+  const size = latestRoom.rules.boardSize;
   const col = Math.floor(((event.clientX - rect.left) / rect.width) * size);
   const row = Math.floor(((event.clientY - rect.top) / rect.height) * size);
   if (row < 0 || col < 0 || row >= size || col >= size) return null;
   return { row, col };
 }
 
-function replayMove(move) {
-  if (!move || move.clientId === clientId() || appliedRemoteMoves.has(move.id) || !els.canvas) return;
-  appliedRemoteMoves.add(move.id);
-  const size = Number(els.board?.value) || 8;
-  const rect = els.canvas.getBoundingClientRect();
-  const x = rect.left + ((move.col + 0.5) / size) * rect.width;
-  const y = rect.top + ((move.row + 0.5) / size) * rect.height;
-  replayingRemoteMove = true;
-  els.canvas.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: x, clientY: y }));
-  replayingRemoteMove = false;
+function getPassedPlayers(previousPlayer, nextPlayer, playerCount) {
+  if (!nextPlayer) return [];
+  const passed = [];
+  let player = (previousPlayer % playerCount) + 1;
+  while (player !== nextPlayer) {
+    passed.push(player);
+    player = (player % playerCount) + 1;
+  }
+  return passed;
+}
+
+function formatCell(row, col) {
+  return `${String.fromCharCode(65 + col)}${row + 1}`;
+}
+
+function formatMoveMessage(player, row, col) {
+  return `${PLAYER_LABELS[player]} ${formatCell(row, col)} に置きました`;
+}
+
+function formatPassMessage(player) {
+  return `${PLAYER_LABELS[player]} は置けないためパス`;
+}
+
+async function submitMove(row, col) {
+  if (!currentMatch || !latestRoom || latestRoom.finished || applyingMove) return;
+  if (latestRoom.currentPlayer !== currentMatch.seat) {
+    setStatus(`あなたは ${PLAYER_LABELS[currentMatch.seat]} / 現在は ${PLAYER_LABELS[latestRoom.currentPlayer]} のターンです`);
+    return;
+  }
+
+  applyingMove = true;
+  try {
+    await runTransaction(roomRef(), (room) => {
+      if (!room || room.finished || !room.board) return room;
+      if (room.players?.[room.currentPlayer] !== clientId()) return room;
+
+      const previousPlayer = room.currentPlayer;
+      const result = applyMove(room.board, row, col, previousPlayer);
+      if (!result.ok) return room;
+
+      const next = getNextPlayer(result.board, previousPlayer, room.rules.playerCount);
+      const messages = [formatMoveMessage(previousPlayer, row, col)];
+      for (const player of getPassedPlayers(previousPlayer, next.player, room.rules.playerCount)) {
+        messages.push(formatPassMessage(player));
+      }
+
+      room.board = result.board;
+      room.lastMessage = messages.join(" / ");
+      room.updatedAt = Date.now();
+      room.version = (room.version ?? 0) + 1;
+      if (next.player === null) {
+        room.finished = true;
+        room.currentPlayer = previousPlayer;
+      } else {
+        room.currentPlayer = next.player;
+      }
+      return room;
+    });
+  } finally {
+    applyingMove = false;
+  }
+}
+
+function renderRoom(room) {
+  latestRoom = room;
+  if (!room?.board || !ctx || !els.canvas) return;
+
+  if (room.finished) {
+    renderResult(room);
+    return;
+  }
+
+  if (started) {
+    els.setup?.classList.add("is-hidden");
+    els.result?.classList.add("is-hidden");
+    els.play?.classList.remove("is-hidden");
+  }
+
+  if (els.turn) els.turn.textContent = `${PLAYER_LABELS[room.currentPlayer]} のターン`;
+  if (els.log) els.log.textContent = room.lastMessage ?? "";
+  renderScores(room);
+  drawBoard(room);
+  setStatus(`あなたは ${PLAYER_LABELS[currentMatch.seat]} / Room: ${room.id.toUpperCase()}`);
+}
+
+function renderScores(room) {
+  if (!els.scores) return;
+  const values = room.rules.winMode === "score"
+    ? scoreBoard(room.board, room.rules.playerCount, createScoreMap(room.rules.boardSize))
+    : countStones(room.board, room.rules.playerCount);
+  const unit = room.rules.winMode === "score" ? "点" : "個";
+
+  els.scores.replaceChildren();
+  for (let player = 1; player <= room.rules.playerCount; player += 1) {
+    const pill = document.createElement("div");
+    pill.className = "score-pill";
+    pill.innerHTML = `
+      <span class="stone-dot" style="background:${PLAYER_COLORS[player]}"></span>
+      <strong>${PLAYER_LABELS[player]}</strong>
+      <span>${values[player]} ${unit}</span>
+    `;
+    els.scores.append(pill);
+  }
+}
+
+function drawBoard(room) {
+  const size = room.rules.boardSize;
+  const cell = els.canvas.width / size;
+  ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
+  ctx.fillStyle = "rgba(32, 93, 71, 0.92)";
+  ctx.fillRect(0, 0, els.canvas.width, els.canvas.height);
+  ctx.strokeStyle = "rgba(255, 253, 247, 0.46)";
+  ctx.lineWidth = Math.max(1, Math.floor(cell * 0.02));
+
+  for (let line = 0; line <= size; line += 1) {
+    const position = Math.round(line * cell) + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(position, 0);
+    ctx.lineTo(position, els.canvas.height);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, position);
+    ctx.lineTo(els.canvas.width, position);
+    ctx.stroke();
+  }
+
+  const legalMoves = new Set(getLegalMoves(room.board, room.currentPlayer).map((move) => `${move.row},${move.col}`));
+  for (let row = 0; row < size; row += 1) {
+    for (let col = 0; col < size; col += 1) {
+      const player = room.board[row][col];
+      const centerX = col * cell + cell / 2;
+      const centerY = row * cell + cell / 2;
+      if (player !== EMPTY) {
+        drawStone(centerX, centerY, cell * 0.38, PLAYER_COLORS[player], player === 2);
+      } else if (legalMoves.has(`${row},${col}`)) {
+        drawLegalHint(centerX, centerY, cell * 0.13);
+      }
+    }
+  }
+}
+
+function drawStone(x, y, radius, color, isLight) {
+  const coloredStoneLighting = {
+    [PLAYER_COLORS[3]]: { highlight: "#ff9a9a", shadow: "#b40000", edge: "rgba(180, 0, 0, 0.28)" },
+    [PLAYER_COLORS[4]]: { highlight: "#9fc3ff", shadow: "#003aa8", edge: "rgba(0, 58, 168, 0.28)" },
+  };
+  const lighting = coloredStoneLighting[color];
+  const gradient = ctx.createRadialGradient(x - radius * 0.32, y - radius * 0.36, radius * 0.1, x, y, radius);
+  gradient.addColorStop(0, lighting?.highlight ?? (isLight ? "#ffffff" : "#5b5b5b"));
+  gradient.addColorStop(0.58, color);
+  gradient.addColorStop(1, lighting?.shadow ?? color);
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = lighting?.edge ?? (isLight ? "rgba(0, 0, 0, 0.32)" : "rgba(0, 0, 0, 0.5)");
+  ctx.lineWidth = lighting ? 1.2 : 2.5;
+  ctx.stroke();
+}
+
+function drawLegalHint(x, y, radius) {
+  ctx.fillStyle = "rgba(255, 253, 247, 0.62)";
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function renderResult(room) {
+  const values = room.rules.winMode === "score"
+    ? scoreBoard(room.board, room.rules.playerCount, createScoreMap(room.rules.boardSize))
+    : countStones(room.board, room.rules.playerCount);
+  const ranking = rankPlayers(values, room.rules.winMode === "reverse" ? "reverse" : "classic");
+  const unit = room.rules.winMode === "score" ? "点" : "個";
+
+  els.ranks?.replaceChildren();
+  for (const [index, entry] of ranking.entries()) {
+    const item = document.createElement("li");
+    item.innerHTML = `<span>${index + 1}位 ${PLAYER_LABELS[entry.player]}</span><span class="rank-value">${entry.value} ${unit}</span>`;
+    els.ranks?.append(item);
+  }
+
+  els.play?.classList.add("is-hidden");
+  els.result?.classList.remove("is-hidden");
+  setStatus(`対戦終了 / Room: ${room.id.toUpperCase()}`);
 }
 
 function attachRoomListeners() {
-  onValue(ref(database, `${RANDOM_ROOMS_PATH}/${currentMatch.roomId}`), (snapshot) => {
+  onValue(roomRef(), async (snapshot) => {
     const room = snapshot.val();
     if (!room) return;
+    latestRoom = room;
     const count = joinedCount(room);
-    if (!started) {
-      setStatus(`対戦相手を探しています... ${count}/${room.rules.playerCount}`);
-    }
+    if (!started) setStatus(`対戦相手を探しています... ${count}/${room.rules.playerCount}`);
+    await initializeRoomIfReady(room);
     startGameOnce(room);
-  });
-
-  onValue(ref(database, `${RANDOM_ROOMS_PATH}/${currentMatch.roomId}/moves`), (snapshot) => {
-    const moves = snapshot.val() ?? {};
-    Object.entries(moves)
-      .map(([id, move]) => ({ id, ...move }))
-      .sort((a, b) => a.createdAt - b.createdAt)
-      .forEach(replayMove);
+    if (started) renderRoom(room);
   });
 }
 
@@ -203,13 +442,10 @@ els.button?.addEventListener("click", async () => {
 });
 
 els.canvas?.addEventListener("click", (event) => {
-  if (!currentMatch || !started || replayingRemoteMove) return;
+  if (!currentMatch || !started) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
   const cell = cellFromEvent(event);
   if (!cell) return;
-  push(ref(database, `${RANDOM_ROOMS_PATH}/${currentMatch.roomId}/moves`), {
-    ...cell,
-    clientId: clientId(),
-    seat: currentMatch.seat,
-    createdAt: Date.now(),
-  });
-});
+  submitMove(cell.row, cell.col);
+}, true);
