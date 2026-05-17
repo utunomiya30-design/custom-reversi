@@ -8,7 +8,7 @@
     <meta property="og:description" content="一瞬でカオスなリバーシが始まるURL。">
     <title>カスタム・リバーシ</title>
     <link rel="stylesheet" href="./styles.css?v=soft-bg-clear-20260517">
-    <link rel="stylesheet" href="./top-art.css?v=title-art-opaque-20260517">
+    <link rel="stylesheet" href="./top-art.css?v=title-art-sharp-20260517">
     <style>
       body::before {
         display: block;
@@ -29,125 +29,136 @@
   </head>
   <body>
     <main class="app-shell">
-      <section class="top-panel" id="setupPanel" aria-label="ゲーム設定" data-i18n-aria="setupAria">
+      <section id="setup-view" class="view setup-view active">
         <div class="title-block">
-          <p class="kicker">Custom Reversi</p>
-          <h1 data-i18n="appTitle">カスタム・リバーシ</h1>
+          <p class="kicker">CUSTOM REVERSI</p>
+          <h1 data-i18n="title">カスタム・リバーシ</h1>
           <p data-i18n="lead">人数、盤面、勝利条件を変えて、その場で遊べるローカル対戦版です。</p>
         </div>
 
-        <form class="settings-grid" id="settingsForm">
-          <label>
-            <span data-i18n="languageLabel">Language</span>
-            <select id="languageSelect">
-              <option value="ja">日本語</option>
-              <option value="en">English</option>
-              <option value="fr">Français</option>
-              <option value="es">Español</option>
-              <option value="de">Deutsch</option>
-              <option value="ko">한국어</option>
-              <option value="zh">中文</option>
-            </select>
-          </label>
-
-          <label>
-            <span data-i18n="playersLabel">Players</span>
-            <select id="playerCountSelect"></select>
-          </label>
-
-          <label>
-            <span data-i18n="boardLabel">Board</span>
-            <select id="boardSizeSelect">
-              <option value="4">4 x 4</option>
-              <option value="6">6 x 6</option>
-              <option value="8" selected>8 x 8</option>
-              <option value="12">12 x 12</option>
-              <option value="16">16 x 16</option>
-            </select>
-          </label>
-
-          <label>
-            <span data-i18n="winModeLabel">Win mode</span>
-            <select id="winModeSelect"></select>
-          </label>
-
-          <label>
-            <span data-i18n="cornerBoostLabel">Corner boost</span>
-            <select id="cornerBoostSelect"></select>
-          </label>
-
-          <label>
-            <span data-i18n="cpuModeLabel">CPU players</span>
-            <select id="cpuModeSelect"></select>
-          </label>
-
-          <label>
-            <span data-i18n="backgroundLabel">Background</span>
-            <input id="backgroundInput" type="file" accept="image/png,image/jpeg">
-          </label>
+        <form id="settings-form" class="settings-card">
+          <div class="settings-grid">
+            <label>
+              <span data-i18n="language">Language</span>
+              <select id="language-select">
+                <option value="ja">日本語</option>
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+                <option value="es">Español</option>
+                <option value="de">Deutsch</option>
+                <option value="ko">한국어</option>
+                <option value="zh">中文</option>
+              </select>
+            </label>
+            <label>
+              <span data-i18n="playerCount">参加人数</span>
+              <select id="player-count">
+                <option value="2">2人</option>
+                <option value="3">3人</option>
+                <option value="4">4人</option>
+              </select>
+            </label>
+            <label>
+              <span data-i18n="boardSize">盤面サイズ</span>
+              <select id="board-size">
+                <option value="4">4 x 4</option>
+                <option value="6">6 x 6</option>
+                <option value="8" selected>8 x 8</option>
+                <option value="12">12 x 12</option>
+                <option value="16">16 x 16</option>
+              </select>
+            </label>
+            <label>
+              <span data-i18n="winMode">勝利条件</span>
+              <select id="win-mode">
+                <option value="classic">通常</option>
+                <option value="reverse">逆転</option>
+                <option value="score">スコア</option>
+              </select>
+            </label>
+            <label>
+              <span data-i18n="cornerBoost">角スタート</span>
+              <select id="corner-boost">
+                <option value="">なし</option>
+                <option value="0">1P</option>
+                <option value="1">2P</option>
+                <option value="2">3P</option>
+                <option value="3">4P</option>
+              </select>
+            </label>
+            <label>
+              <span data-i18n="cpuPlayers">CPUプレイヤー</span>
+              <select id="cpu-players">
+                <option value="">なし</option>
+                <option value="1">2P</option>
+                <option value="2">3P</option>
+                <option value="3">4P</option>
+                <option value="1,2">2P + 3P</option>
+                <option value="1,2,3">2P + 3P + 4P</option>
+              </select>
+            </label>
+            <label class="file-field">
+              <span data-i18n="backgroundImage">背景画像</span>
+              <input id="background-image" type="file" accept="image/png,image/jpeg">
+            </label>
+          </div>
 
           <div class="actions">
-            <button type="submit" class="primary-button" data-i18n="startButton">ゲーム開始</button>
-            <button type="button" id="shareRuleButton" data-i18n="shareRuleButton">このルールをシェア</button>
+            <button type="submit" class="primary" data-i18n="startGame">ゲーム開始</button>
+            <button type="button" id="share-rule" data-i18n="shareRule">このルールをシェア</button>
           </div>
 
-          <div class="online-panel">
-            <div>
-              <strong data-i18n="onlineTitle">Online room</strong>
-              <p data-i18n="onlineLead">Create a room and share the URL with another tab or browser.</p>
-            </div>
-            <div class="online-actions">
-              <button type="button" id="createRoomButton" data-i18n="createRoomButton">Create room</button>
+          <section class="online-panel" aria-labelledby="online-title">
+            <h2 id="online-title" data-i18n="onlineTitle">オンライン部屋</h2>
+            <p data-i18n="onlineLead">部屋を作ってURLを共有すると、別タブや別ブラウザから参加できます。</p>
+            <div class="online-controls">
+              <button type="button" id="create-room" data-i18n="createRoom">部屋を作る</button>
               <label class="room-code-field">
-                <span data-i18n="roomCodeLabel">Room code</span>
-                <input id="roomCodeInput" type="text" inputmode="latin" autocomplete="off" maxlength="12">
+                <span data-i18n="roomCode">部屋コード</span>
+                <input id="room-code" type="text" autocomplete="off" inputmode="latin" placeholder="abcd1234">
               </label>
-              <button type="button" id="joinRoomButton" data-i18n="joinRoomButton">Join room</button>
+              <button type="button" id="join-room" data-i18n="joinRoom">参加する</button>
             </div>
-            <p class="online-status" id="onlineStatus" aria-live="polite"></p>
-          </div>
+            <p id="online-status" class="online-status" aria-live="polite"></p>
+          </section>
         </form>
       </section>
 
-      <section class="play-panel is-hidden" id="playPanel" aria-label="プレイ画面" data-i18n-aria="playAria">
+      <section id="game-view" class="view game-view">
         <header class="game-header">
           <div>
-            <p class="kicker" data-i18n="nowPlaying">Now playing</p>
-            <h2 id="turnLabel">1P のターン</h2>
-            <p class="move-log" id="moveLog" aria-live="polite"></p>
-            <p class="online-status" id="gameOnlineStatus" aria-live="polite"></p>
+            <p class="kicker" data-i18n="nowPlaying">NOW PLAYING</p>
+            <h2 id="turn-label">1P のターン</h2>
           </div>
-          <div class="score-row" id="scoreRow" aria-live="polite"></div>
+          <div id="score-board" class="score-board"></div>
         </header>
 
         <div class="board-wrap">
-          <canvas id="gameCanvas" width="720" height="720" aria-label="リバーシ盤" data-i18n-aria="boardAria"></canvas>
+          <canvas id="game-board" width="640" height="640"></canvas>
         </div>
 
-        <div class="play-actions">
-          <button type="button" id="inviteButton" data-i18n="inviteButton">招待URLをコピー</button>
-          <button type="button" id="restartButton" data-i18n="restartButton">リノベーション</button>
-          <button type="button" id="backButton" data-i18n="backButton">トップに戻る</button>
+        <div class="actions game-actions">
+          <button type="button" id="restart-game" data-i18n="restart">リノベーション</button>
+          <button type="button" id="back-top" data-i18n="backTop">トップに戻る</button>
         </div>
 
-        <aside class="ad-slot" aria-label="広告枠" data-i18n-aria="adAria" data-i18n="adSlot">Advertisement</aside>
+        <div class="ad-slot" data-i18n="adBanner">広告枠</div>
       </section>
 
-      <section class="result-panel is-hidden" id="resultPanel" aria-label="結果画面" data-i18n-aria="resultAria">
+      <section id="result-view" class="view result-view">
         <div class="result-card">
-          <p class="kicker" data-i18n="resultKicker">Result</p>
-          <h2 data-i18n="finalResult">最終結果</h2>
-          <ol id="rankingList"></ol>
-          <div class="large-ad-slot" aria-label="広告枠" data-i18n-aria="adAria" data-i18n="largeAdSlot">Interstitial / Large Banner</div>
-          <div class="result-actions">
-            <button type="button" id="playAgainButton" onclick="document.getElementById('restartButton').click()">もう一度遊ぶ</button>
-            <button type="button" id="resultBackButton" onclick="document.getElementById('playPanel').classList.add('is-hidden');document.getElementById('resultPanel').classList.add('is-hidden');document.getElementById('setupPanel').classList.remove('is-hidden')">トップに戻る</button>
-            <button type="button" id="shareResultButton" class="primary-button" data-i18n="shareResultButton">この結果をSNSで自慢する</button>
+          <p class="kicker" data-i18n="resultKicker">RESULT</p>
+          <h2 data-i18n="resultTitle">結果発表</h2>
+          <ol id="ranking-list"></ol>
+          <div class="actions">
+            <button type="button" id="share-result" class="primary" data-i18n="shareResult">この結果をSNSで自慢する</button>
+            <button type="button" id="result-back-top" data-i18n="backTop">トップに戻る</button>
           </div>
+          <div class="ad-slot large" data-i18n="adLarge">大型広告枠</div>
         </div>
       </section>
     </main>
 
-    <script type="module" src="./src/app.js?v=colored-lighting-20260517"></script>
+    <script type="module" src="./src/app.js?v=20260517-online-1"></script>
   </body>
 </html>
