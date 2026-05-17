@@ -4,26 +4,13 @@ body::before {
 
 .title-block {
   position: relative;
-  min-height: 430px;
+  min-height: auto;
   padding: 18px 0 0;
   isolation: isolate;
 }
 
 .title-block::before {
-  content: "";
-  position: absolute;
-  left: -22px;
-  top: 138px;
-  z-index: -1;
-  width: min(520px, 56vw);
-  aspect-ratio: 120 / 103;
-  border-radius: 8px;
-  background-image: var(--top-art);
-  background-size: cover;
-  background-position: center;
-  opacity: 1;
-  filter: saturate(1.06) contrast(1.04);
-  box-shadow: 0 18px 54px rgba(48, 41, 30, 0.08);
+  display: none !important;
 }
 
 .title-block > * {
@@ -47,17 +34,4 @@ input[type="file"],
 input[type="file"],
 .online-panel {
   background-color: #f1eadc !important;
-}
-
-@media (max-width: 820px) {
-  .title-block {
-    min-height: 330px;
-  }
-
-  .title-block::before {
-    left: -18px;
-    top: 126px;
-    width: min(480px, 92vw);
-    opacity: 1;
-  }
 }
