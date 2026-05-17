@@ -121,7 +121,11 @@
           <h2 data-i18n="finalResult">最終結果</h2>
           <ol id="rankingList"></ol>
           <div class="large-ad-slot" aria-label="広告枠" data-i18n-aria="adAria" data-i18n="largeAdSlot">Interstitial / Large Banner</div>
-          <button type="button" id="shareResultButton" class="primary-button" data-i18n="shareResultButton">この結果をSNSで自慢する</button>
+          <div class="result-actions">
+            <button type="button" id="playAgainButton" onclick="document.getElementById('restartButton').click()">もう一度遊ぶ</button>
+            <button type="button" id="resultBackButton" onclick="document.getElementById('playPanel').classList.add('is-hidden');document.getElementById('resultPanel').classList.add('is-hidden');document.getElementById('setupPanel').classList.remove('is-hidden')">トップに戻る</button>
+            <button type="button" id="shareResultButton" class="primary-button" data-i18n="shareResultButton">この結果をSNSで自慢する</button>
+          </div>
         </div>
       </section>
     </main>
