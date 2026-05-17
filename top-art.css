@@ -36,12 +36,30 @@ body::before {
 .result-card,
 .score-pill,
 select,
+input[type="text"],
 input[type="file"],
 .room-code-field input {
   position: relative;
   z-index: 2;
   background-color: #fffdf7 !important;
   opacity: 1;
+}
+
+input[type="text"] {
+  width: 100%;
+  min-height: 66px;
+  border: 1px solid #d7c6a9;
+  border-radius: 10px;
+  padding: 0 20px;
+  color: #201f1b;
+  font: inherit;
+  font-size: 1.05rem;
+  outline: none;
+}
+
+input[type="text"]:focus {
+  border-color: #1f6b53;
+  box-shadow: 0 0 0 3px rgba(31, 107, 83, 0.14);
 }
 
 input[type="file"],
