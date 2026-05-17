@@ -9,6 +9,16 @@
     <title>カスタム・リバーシ</title>
     <link rel="stylesheet" href="./styles.css?v=soft-bg-clear-20260517">
     <link rel="stylesheet" href="./top-art.css?v=title-art-hq-viewport-tune-20260517">
+    <script>
+      window.CUSTOM_REVERSI_ADS = {
+        enabled: false,
+        client: "",
+        slots: {
+          gameBanner: "",
+          resultLarge: "",
+        },
+      };
+    </script>
     <style>
       body::before {
         display: block;
@@ -142,7 +152,7 @@
           <button type="button" id="back-top" data-i18n="backTop">トップに戻る</button>
         </div>
 
-        <div class="ad-slot" data-i18n="adBanner">広告枠</div>
+        <div class="ad-slot ad-slot-banner" data-ad-placement="game-banner" aria-label="広告枠">広告枠</div>
       </section>
 
       <section id="result-view" class="view result-view">
@@ -154,11 +164,12 @@
             <button type="button" id="share-result" class="primary" data-i18n="shareResult">この結果をSNSで自慢する</button>
             <button type="button" id="result-back-top" data-i18n="backTop">トップに戻る</button>
           </div>
-          <div class="ad-slot large" data-i18n="adLarge">大型広告枠</div>
+          <div class="ad-slot large ad-slot-result" data-ad-placement="result-large" aria-label="大型広告枠">大型広告枠</div>
         </div>
       </section>
     </main>
 
     <script type="module" src="./src/app.js?v=20260517-online-1"></script>
+    <script type="module" src="./src/ads.js?v=20260517-fixed-ads-1"></script>
   </body>
 </html>
