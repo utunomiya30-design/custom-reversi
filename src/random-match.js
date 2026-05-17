@@ -23,6 +23,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const WAITING_ROOM_TTL = 1000 * 60 * 10;
+const RANDOM_QUEUE_PATH = "randomQueueV2";
+const RANDOM_ROOMS_PATH = "randomRoomsV2";
 const CLIENT_ID = crypto.randomUUID();
 
 const els = {
@@ -80,7 +82,7 @@ function joinedCount(room) {
 
 async function claimSeat(id, ownClientId) {
   let seat = null;
-  const roomRef = ref(database, `randomRooms/${id}`);
+  const roomRef = ref(database, `${RANDOM_ROOMS_PATH}/${id}`);
   await runTransaction(roomRef, (room) => {
     if (!room) return room;
 
@@ -114,8 +116,8 @@ async function createWaitingRoom(value, ownClientId, key) {
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
-  await set(ref(database, `randomRooms/${id}`), room);
-  await set(ref(database, `randomQueue/${key}`), { roomId: id, createdAt: Date.now() });
+  await set(ref(database, `${RANDOM_ROOMS_PATH}/${id}`), room);
+  await set(ref(database, `${RANDOM_QUEUE_PATH}/${key}`), { roomId: id, createdAt: Date.now() });
   return { roomId: id, seat: 1 };
 }
 
@@ -123,12 +125,12 @@ async function findOrCreateMatch() {
   const value = rules();
   const key = matchKey(value);
   const ownClientId = clientId();
-  const queueRef = ref(database, `randomQueue/${key}`);
+  const queueRef = ref(database, `${RANDOM_QUEUE_PATH}/${key}`);
   const queued = (await get(queueRef)).val();
 
   if (queued?.roomId && Date.now() - queued.createdAt < WAITING_ROOM_TTL) {
     const seat = await claimSeat(queued.roomId, ownClientId);
-    const room = (await get(ref(database, `randomRooms/${queued.roomId}`))).val();
+    const room = (await get(ref(database, `${RANDOM_ROOMS_PATH}/${queued.roomId}`))).val();
     if (seat && room) {
       if (joinedCount(room) >= room.rules.playerCount) await remove(queueRef);
       return { roomId: queued.roomId, seat };
@@ -168,7 +170,7 @@ function replayMove(move) {
 }
 
 function attachRoomListeners() {
-  onValue(ref(database, `randomRooms/${currentMatch.roomId}`), (snapshot) => {
+  onValue(ref(database, `${RANDOM_ROOMS_PATH}/${currentMatch.roomId}`), (snapshot) => {
     const room = snapshot.val();
     if (!room) return;
     const count = joinedCount(room);
@@ -178,7 +180,7 @@ function attachRoomListeners() {
     startGameOnce(room);
   });
 
-  onValue(ref(database, `randomRooms/${currentMatch.roomId}/moves`), (snapshot) => {
+  onValue(ref(database, `${RANDOM_ROOMS_PATH}/${currentMatch.roomId}/moves`), (snapshot) => {
     const moves = snapshot.val() ?? {};
     Object.entries(moves)
       .map(([id, move]) => ({ id, ...move }))
@@ -204,7 +206,7 @@ els.canvas?.addEventListener("click", (event) => {
   if (!currentMatch || !started || replayingRemoteMove) return;
   const cell = cellFromEvent(event);
   if (!cell) return;
-  push(ref(database, `randomRooms/${currentMatch.roomId}/moves`), {
+  push(ref(database, `${RANDOM_ROOMS_PATH}/${currentMatch.roomId}/moves`), {
     ...cell,
     clientId: clientId(),
     seat: currentMatch.seat,
