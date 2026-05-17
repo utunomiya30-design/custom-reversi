@@ -1,0 +1,8 @@
+{
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/app.js && node --check src/online-local-room.js && node --check src/reversi-core.js && node --check scripts/static-server.js",
+    "start": "node scripts/static-server.js",
+    "test": "node tests/reversi-core.test.js"
+  }
+}
