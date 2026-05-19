@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://utunomiya30-design.github.io/custom-reversi/sitemap.xml
