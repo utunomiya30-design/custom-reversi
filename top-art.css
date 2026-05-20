@@ -17,13 +17,27 @@ body::before {
   z-index: -1;
   width: min(760px, 76vw);
   aspect-ratio: 120 / 103;
+  border: 1px solid rgba(91, 76, 52, 0.18);
   border-radius: 8px;
   background-image: url("./top-bg.jpg?v=title-bg-hq-20260517");
   background-size: cover;
   background-position: center;
   opacity: 1;
-  filter: saturate(1.05) contrast(1.02);
-  box-shadow: 0 18px 54px rgba(48, 41, 30, 0.08);
+  filter: saturate(1.04) contrast(1.04);
+  box-shadow: 0 26px 70px rgba(43, 34, 22, 0.14);
+}
+
+.title-block::after {
+  content: "";
+  position: absolute;
+  left: -34px;
+  top: 168px;
+  z-index: -1;
+  width: min(760px, 76vw);
+  aspect-ratio: 120 / 103;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 253, 247, 0) 62%, rgba(247, 243, 234, 0.82));
+  pointer-events: none;
 }
 
 .title-block > * {
@@ -41,8 +55,14 @@ input[type="file"],
 .room-code-field input {
   position: relative;
   z-index: 2;
-  background-color: #fffdf7 !important;
   opacity: 1;
+}
+
+.settings-grid,
+select,
+input[type="text"],
+.room-code-field input {
+  background-color: #fffdf7 !important;
 }
 
 .setup-intro {
@@ -51,9 +71,9 @@ input[type="file"],
   z-index: 2;
   margin: 0 0 2px;
   padding: 16px 18px;
-  border: 1px solid #d7c6a9;
-  border-radius: 10px;
-  background: #f1eadc;
+  border: 1px solid rgba(91, 76, 52, 0.2);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f5ead8, #efe3cf);
   color: #4f473d;
   font-size: 0.98rem;
   line-height: 1.7;
@@ -63,7 +83,7 @@ input[type="text"] {
   width: 100%;
   min-height: 66px;
   border: 1px solid #d7c6a9;
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 0 20px;
   color: #201f1b;
   font: inherit;
@@ -76,9 +96,8 @@ input[type="text"]:focus {
   box-shadow: 0 0 0 3px rgba(31, 107, 83, 0.14);
 }
 
-input[type="file"],
-.online-panel {
-  background-color: #f1eadc !important;
+input[type="file"] {
+  background-color: #f4ead8 !important;
 }
 
 .online-actions {
@@ -86,8 +105,9 @@ input[type="file"],
 }
 
 #randomMatchButton {
-  border-color: #d29a3a;
-  background: #fff8e8;
+  border-color: rgba(200, 141, 40, 0.65);
+  background: linear-gradient(180deg, #fff9ec, #f8ecd0);
+  color: #4c3511;
 }
 
 .ad-slot {
@@ -117,14 +137,14 @@ input[type="file"],
 
 @media (max-width: 820px) {
   .title-block {
-    min-height: 720px;
+    min-height: 690px;
   }
 
-  .title-block::before {
+  .title-block::before,
+  .title-block::after {
     left: -28px;
-    top: 156px;
+    top: 148px;
     width: min(680px, 116vw);
-    opacity: 1;
   }
 
   .online-actions {
