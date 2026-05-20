@@ -17,6 +17,7 @@ const config = {
 };
 
 const AD_SCRIPT_ID = "adsense-script";
+const ADSENSE_SRC = "pagead2.googlesyndication.com/pagead/js/adsbygoogle.js";
 
 function hasProductionConfig() {
   return Boolean(
@@ -27,8 +28,13 @@ function hasProductionConfig() {
   );
 }
 
+function findAdSenseScript() {
+  return Array.from(document.scripts).find((script) => script.src.includes(ADSENSE_SRC));
+}
+
 function loadAdSenseScript() {
-  if (document.getElementById(AD_SCRIPT_ID)) return;
+  const existing = document.getElementById(AD_SCRIPT_ID) || findAdSenseScript();
+  if (existing) return existing;
 
   const script = document.createElement("script");
   script.id = AD_SCRIPT_ID;
@@ -36,11 +42,15 @@ function loadAdSenseScript() {
   script.crossOrigin = "anonymous";
   script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(config.client)}`;
   document.head.appendChild(script);
+  return script;
 }
 
 function buildAdUnit(container, slotId, format) {
+  if (container.querySelector(".adsbygoogle")) return;
+
   container.textContent = "";
   container.classList.add("is-ad-ready");
+  container.setAttribute("aria-label", "Advertisement");
 
   const ad = document.createElement("ins");
   ad.className = "adsbygoogle";
@@ -57,7 +67,7 @@ function buildAdUnit(container, slotId, format) {
     window.adsbygoogle.push({});
   } catch (error) {
     container.classList.remove("is-ad-ready");
-    container.textContent = "広告枠";
+    container.textContent = "Advertisement";
     console.warn("AdSense slot initialization failed", error);
   }
 }
@@ -65,7 +75,7 @@ function buildAdUnit(container, slotId, format) {
 function preparePlaceholders() {
   document.querySelectorAll("[data-ad-placement]").forEach((container) => {
     if (!container.textContent.trim()) {
-      container.textContent = "広告枠";
+      container.textContent = "Advertisement";
     }
   });
 }
