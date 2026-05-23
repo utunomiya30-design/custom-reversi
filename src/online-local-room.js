@@ -1,10 +1,12 @@
 import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getDatabase,
+  onDisconnect,
   onValue,
   ref,
   runTransaction,
   set,
+  update,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
 const firebaseConfig = {
@@ -52,6 +54,7 @@ class LocalRoomClient {
     this.ready = ready;
     this.room = null;
     this.unsubscribe = null;
+    this.heartbeatTimer = null;
     this.listeners = new Set();
     if (assignedPlayer) this.storeAssignedPlayer(assignedPlayer);
   }
@@ -62,7 +65,9 @@ class LocalRoomClient {
     const room = createInitialRoom({ roomId, rules, hostClientId: clientId });
     sessionStorage.setItem(`${CLIENT_PREFIX}${roomId}`, clientId);
     const ready = set(ref(database, `${ROOMS_PATH}/${roomId}`), room);
-    return new LocalRoomClient({ roomId, clientId, assignedPlayer: 1, ready });
+    const client = new LocalRoomClient({ roomId, clientId, assignedPlayer: 1, ready });
+    client.startHeartbeat(1);
+    return client;
   }
 
   static joinRoom({ roomId, forceNewClient = false }) {
@@ -128,7 +133,32 @@ class LocalRoomClient {
     });
 
     if (claimedSeat) this.storeAssignedPlayer(claimedSeat);
+    if (claimedSeat) this.startHeartbeat(claimedSeat);
     return claimedSeat;
+  }
+
+  startHeartbeat(player = this.getAssignedPlayer()) {
+    if (!player) return;
+    const presencePath = `${ROOMS_PATH}/${this.roomId}/presence/${player}`;
+    const presenceRef = ref(database, presencePath);
+    const touch = () => update(presenceRef, {
+      clientId: this.clientId,
+      player,
+      connected: true,
+      lastSeen: Date.now(),
+    }).catch((error) => console.warn("Presence update failed", error));
+
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    this.ready.then(async () => {
+      await touch();
+      onDisconnect(presenceRef).update({
+        clientId: this.clientId,
+        player,
+        connected: false,
+        lastSeen: Date.now(),
+      });
+      this.heartbeatTimer = setInterval(touch, 5000);
+    }).catch((error) => console.warn("Presence setup failed", error));
   }
 
   setGameState({ board, currentPlayer, finished, winner, lastMessage }) {
@@ -158,6 +188,17 @@ class LocalRoomClient {
 
   close() {
     if (this.unsubscribe) this.unsubscribe();
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    this.heartbeatTimer = null;
+    const player = this.getAssignedPlayer();
+    if (player) {
+      update(ref(database, `${ROOMS_PATH}/${this.roomId}/presence/${player}`), {
+        clientId: this.clientId,
+        player,
+        connected: false,
+        lastSeen: Date.now(),
+      }).catch(() => {});
+    }
     this.unsubscribe = null;
     this.listeners.clear();
   }
