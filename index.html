@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ja">
   <head>
     <meta charset="utf-8">
@@ -137,6 +137,21 @@
             <input id="backgroundInput" type="file" accept="image/png,image/jpeg">
           </label>
 
+          <label>
+            <span>駒画像を貼る色</span>
+            <select id="pieceImagePlayerSelect">
+              <option value="1">1P 黒</option>
+              <option value="2">2P 白</option>
+              <option value="3">3P 赤</option>
+              <option value="4">4P 青</option>
+            </select>
+          </label>
+
+          <label>
+            <span>駒画像</span>
+            <input id="pieceImageInput" type="file" accept="image/png,image/jpeg,image/webp">
+          </label>
+
           <div class="actions">
             <button type="submit" class="primary-button" data-i18n="startButton">ゲーム開始</button>
             <button type="button" id="shareRuleButton" data-i18n="shareRuleButton">このルールをシェア</button>
@@ -201,7 +216,7 @@
     </main>
 
     <script src="./site-compliance.js?v=20260519-adsense-1"></script>
-    <script type="module" src="./src/app.js?v=20260524-presence-1"></script>
+    <script type="module" src="./src/app.js?v=20260524-piece-reconnect-1"></script>
     <script type="module" src="./src/ads.js?v=20260520-premium-1"></script>
     <script type="module" src="./src/random-match.js?v=20260519-safe4p-1"></script>
     <script type="module" src="./src/online-reset.js?v=20260517-reset-1"></script>
@@ -234,3 +249,4 @@
     </script>
   </body>
 </html>
+

@@ -1,4 +1,4 @@
-import {
+﻿import {
   EMPTY,
   applyMove,
   countStones,
@@ -9,7 +9,7 @@ import {
   rankPlayers,
   scoreBoard,
 } from "./reversi-core.js";
-import { LocalRoomClient } from "./online-local-room.js?v=20260524-presence-1";
+import { LocalRoomClient } from "./online-local-room.js?v=20260524-reconnect-1";
 
 const COLORS = { 1: "#141414", 2: "#f7f3ea", 3: "#f02f2f", 4: "#176cff" };
 const LANG = {
@@ -39,7 +39,7 @@ const ALIASES = { fr: "en", es: "en", de: "en", ko: "en", zh: "en" };
 const $ = (id) => document.querySelector(id);
 const els = {
   setup: $("#setupPanel"), play: $("#playPanel"), result: $("#resultPanel"), form: $("#settingsForm"),
-  lang: $("#languageSelect"), players: $("#playerCountSelect"), board: $("#boardSizeSelect"), win: $("#winModeSelect"), corner: $("#cornerBoostSelect"), cpu: $("#cpuModeSelect"), bg: $("#backgroundInput"),
+  lang: $("#languageSelect"), players: $("#playerCountSelect"), board: $("#boardSizeSelect"), win: $("#winModeSelect"), corner: $("#cornerBoostSelect"), cpu: $("#cpuModeSelect"), bg: $("#backgroundInput"), pieceImage: $("#pieceImageInput"), pieceImagePlayer: $("#pieceImagePlayerSelect"),
   share: $("#shareRuleButton"), createRoom: $("#createRoomButton"), joinRoom: $("#joinRoomButton"), roomCode: $("#roomCodeInput"), online: $("#onlineStatus"), gameOnline: $("#gameOnlineStatus"),
   canvas: $("#gameCanvas"), turn: $("#turnLabel"), log: $("#moveLog"), scores: $("#scoreRow"), invite: $("#inviteButton"), restart: $("#restartButton"), back: $("#backButton"), ranks: $("#rankingList"), resultShare: $("#shareResultButton"),
 };
@@ -47,6 +47,8 @@ const ctx = els.canvas.getContext("2d");
 let state = null;
 let bgUrl = null;
 let bgImage = null;
+const pieceImages = new Map();
+const pieceImageUrls = new Map();
 let cpuTimer = null;
 let roomClient = null;
 let assignedPlayer = null;
@@ -88,6 +90,7 @@ function populateOptions(s = settings()) {
   replaceOptions(els.cpu, [["none", d.none], ["opponents", d.cpuOpp]]);
   els.players.value = String(s.playerCount ?? 2); els.win.value = s.winMode ?? "classic"; els.corner.value = s.cornerBoostPlayer ? String(s.cornerBoostPlayer) : ""; els.cpu.value = s.cpuMode ?? "none";
   syncCornerOptions();
+  syncPieceImagePlayers();
 }
 function translate() {
   const d = dict();
@@ -113,6 +116,7 @@ function translate() {
   document.querySelector(".ad-slot").textContent = d.ad; document.querySelector(".large-ad-slot").textContent = d.largeAd;
   if (state) { state.language = els.lang.value; render(); }
 }
+function syncPieceImagePlayers() { if (!els.pieceImagePlayer) return; for (const o of els.pieceImagePlayer.options) o.disabled = Number(o.value) > (Number(els.players.value) || 2); if (Number(els.pieceImagePlayer.value) > (Number(els.players.value) || 2)) els.pieceImagePlayer.value = "1"; }
 function syncCornerOptions() { const count = Number(els.players.value) || 2; for (const o of els.corner.options) o.disabled = o.value !== "" && Number(o.value) > count; if (Number(els.corner.value) > count) els.corner.value = ""; }
 function encodeRules(s) { return btoa(unescape(encodeURIComponent(JSON.stringify(s)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
 function decodeRules(v) { try { return JSON.parse(decodeURIComponent(escape(atob(v.replace(/-/g, "+").replace(/_/g, "/"))))); } catch { return null; } }
@@ -138,8 +142,8 @@ function cpuMove() { cpuTimer = null; if (!state || state.finished || !isCpu(sta
 function render() { renderStatus(); els.log.textContent = state?.lastMessage ?? ""; renderScores(); draw(); updateOnlineStatus(); }
 function renderStatus() { if (!state || state.finished) return; els.turn.textContent = `${label(state.currentPlayer)} ${dict().turn}`; }
 function renderScores() { const values = state.winMode === "score" ? scoreBoard(state.board, state.playerCount, state.scoreMap) : countStones(state.board, state.playerCount); const unit = state.winMode === "score" ? dict().points : dict().stones; els.scores.replaceChildren(); for (let p = 1; p <= state.playerCount; p++) { const div = document.createElement("div"); div.className = "score-pill"; div.innerHTML = `<span class="stone-dot" style="background:${COLORS[p]}"></span><strong>${label(p)}</strong><span>${values[p]} ${unit}</span>`; els.scores.append(div); } }
-function draw() { const size = state.boardSize, c = els.canvas.width / size; ctx.clearRect(0, 0, els.canvas.width, els.canvas.height); ctx.fillStyle = "rgba(32, 93, 71, 0.92)"; ctx.fillRect(0, 0, els.canvas.width, els.canvas.height); if (bgImage) { ctx.globalAlpha = 0.34; ctx.drawImage(bgImage, 0, 0, els.canvas.width, els.canvas.height); ctx.globalAlpha = 1; } ctx.strokeStyle = "rgba(255,255,255,.46)"; for (let i = 0; i <= size; i++) { const x = Math.round(i * c) + .5; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, els.canvas.height); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, x); ctx.lineTo(els.canvas.width, x); ctx.stroke(); } const legal = new Set(getLegalMoves(state.board, state.currentPlayer).map(m => `${m.row},${m.col}`)); for (let r = 0; r < size; r++) for (let col = 0; col < size; col++) { const p = state.board[r][col], x = col * c + c / 2, y = r * c + c / 2; if (p) stone(x, y, c * .38, COLORS[p], p === 2); else if (legal.has(`${r},${col}`)) hint(x, y, c * .13); } }
-function stone(x, y, radius, color, light) { const lighting = color === COLORS[3] ? { highlight: "#ff9a9a", shadow: "#b40000", edge: "rgba(180,0,0,.28)" } : color === COLORS[4] ? { highlight: "#9fc3ff", shadow: "#003aa8", edge: "rgba(0,58,168,.28)" } : null; const g = ctx.createRadialGradient(x - radius * .3, y - radius * .35, radius * .1, x, y, radius); g.addColorStop(0, lighting?.highlight ?? (light ? "#fff" : "#555")); g.addColorStop(.58, color); g.addColorStop(1, lighting?.shadow ?? color); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = lighting?.edge ?? (light ? "rgba(0,0,0,.32)" : "rgba(0,0,0,.5)"); ctx.lineWidth = lighting ? 1.2 : 2.5; ctx.stroke(); }
+function draw() { const size = state.boardSize, c = els.canvas.width / size; ctx.clearRect(0, 0, els.canvas.width, els.canvas.height); ctx.fillStyle = "rgba(32, 93, 71, 0.92)"; ctx.fillRect(0, 0, els.canvas.width, els.canvas.height); if (bgImage) { ctx.globalAlpha = 0.34; ctx.drawImage(bgImage, 0, 0, els.canvas.width, els.canvas.height); ctx.globalAlpha = 1; } ctx.strokeStyle = "rgba(255,255,255,.46)"; for (let i = 0; i <= size; i++) { const x = Math.round(i * c) + .5; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, els.canvas.height); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, x); ctx.lineTo(els.canvas.width, x); ctx.stroke(); } const legal = new Set(getLegalMoves(state.board, state.currentPlayer).map(m => `${m.row},${m.col}`)); for (let r = 0; r < size; r++) for (let col = 0; col < size; col++) { const p = state.board[r][col], x = col * c + c / 2, y = r * c + c / 2; if (p) stone(x, y, c * .38, COLORS[p], p === 2, pieceImages.get(p)); else if (legal.has(`${r},${col}`)) hint(x, y, c * .13); } }
+function stone(x, y, radius, color, light, image = null) { const lighting = color === COLORS[3] ? { highlight: "#ff9a9a", shadow: "#b40000", edge: "rgba(180,0,0,.28)" } : color === COLORS[4] ? { highlight: "#9fc3ff", shadow: "#003aa8", edge: "rgba(0,58,168,.28)" } : null; const g = ctx.createRadialGradient(x - radius * .3, y - radius * .35, radius * .1, x, y, radius); g.addColorStop(0, lighting?.highlight ?? (light ? "#fff" : "#555")); g.addColorStop(.58, color); g.addColorStop(1, lighting?.shadow ?? color); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill(); if (image?.complete) { ctx.save(); ctx.beginPath(); ctx.arc(x, y, radius * .9, 0, Math.PI * 2); ctx.clip(); const side = radius * 1.8; ctx.drawImage(image, x - side / 2, y - side / 2, side, side); ctx.restore(); const shine = ctx.createRadialGradient(x - radius * .38, y - radius * .42, 1, x, y, radius); shine.addColorStop(0, "rgba(255,255,255,.52)"); shine.addColorStop(.38, "rgba(255,255,255,.12)"); shine.addColorStop(1, "rgba(0,0,0,.18)"); ctx.fillStyle = shine; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill(); } ctx.strokeStyle = lighting?.edge ?? (light ? "rgba(0,0,0,.32)" : "rgba(0,0,0,.5)"); ctx.lineWidth = image ? 1.4 : (lighting ? 1.2 : 2.5); ctx.stroke(); }
 function hint(x, y, r) { ctx.fillStyle = "rgba(255,255,255,.62)"; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
 function clickBoard(e) { if (!state || state.finished || isCpu(state.currentPlayer)) return; if (roomClient && assignedPlayer !== state.currentPlayer) return announce(dict().blocked); const rect = els.canvas.getBoundingClientRect(); const scale = els.canvas.width / rect.width; const c = els.canvas.width / state.boardSize; const row = Math.floor((e.clientY - rect.top) * scale / c); const col = Math.floor((e.clientX - rect.left) * scale / c); const prev = state.currentPlayer; const res = applyMove(state.board, row, col, prev); if (!res.ok) return; state.board = res.board; if (!advance(prev, row, col)) return; render(); syncRoom(); queueCpu(); }
 function finish() { clearCpu(); state.finished = true; const values = state.winMode === "score" ? scoreBoard(state.board, state.playerCount, state.scoreMap) : countStones(state.board, state.playerCount); const ranking = rankPlayers(values, state.winMode === "reverse" ? "reverse" : "classic"); const unit = state.winMode === "score" ? dict().points : dict().stones; els.ranks.replaceChildren(); ranking.forEach((entry, i) => { const li = document.createElement("li"); li.innerHTML = `<span>#${i + 1} ${label(entry.player)}</span><span class="rank-value">${entry.value} ${unit}</span>`; els.ranks.append(li); }); els.play.classList.add("is-hidden"); els.result.classList.remove("is-hidden"); syncRoom(); }
@@ -153,13 +157,15 @@ function joinRoom(id) { try { const forceNewClient = new URLSearchParams(locatio
 
 els.form.addEventListener("submit", e => { e.preventDefault(); startGame(); });
 els.lang.addEventListener("change", () => { const s = settings(); populateOptions(s); translate(); });
-els.players.addEventListener("change", syncCornerOptions);
+els.players.addEventListener("change", () => { syncCornerOptions(); syncPieceImagePlayers(); });
 els.share.addEventListener("click", shareUrl); els.invite.addEventListener("click", shareUrl); els.resultShare.addEventListener("click", shareUrl);
 els.createRoom.addEventListener("click", createRoom); els.joinRoom.addEventListener("click", () => els.roomCode.value && joinRoom(els.roomCode.value));
 els.roomCode.addEventListener("input", () => els.roomCode.value = els.roomCode.value.replace(/[^a-z0-9]/gi, "").toUpperCase());
 els.restart.addEventListener("click", startGame); els.back.addEventListener("click", () => { clearCpu(); els.play.classList.add("is-hidden"); els.result.classList.add("is-hidden"); els.setup.classList.remove("is-hidden"); });
 els.canvas.addEventListener("click", clickBoard);
 els.bg.addEventListener("change", e => { if (bgUrl) URL.revokeObjectURL(bgUrl); const f = e.target.files[0]; if (!f) return; bgUrl = URL.createObjectURL(f); bgImage = new Image(); bgImage.onload = () => state && draw(); bgImage.src = bgUrl; });
+els.pieceImage?.addEventListener("change", e => { const f = e.target.files[0]; const player = Number(els.pieceImagePlayer?.value || 1); if (pieceImageUrls.has(player)) URL.revokeObjectURL(pieceImageUrls.get(player)); if (!f) { pieceImages.delete(player); pieceImageUrls.delete(player); if (state) draw(); return; } const url = URL.createObjectURL(f); const img = new Image(); img.onload = () => { pieceImages.set(player, img); if (state) draw(); }; img.src = url; pieceImageUrls.set(player, url); });
+els.pieceImagePlayer?.addEventListener("change", () => { if (els.pieceImage) els.pieceImage.value = ""; });
 
 populateOptions(); translate();
 const params = new URLSearchParams(location.search);
@@ -167,3 +173,4 @@ const rules = params.get("rules");
 if (rules) { const s = decodeRules(rules); if (s) applySettings(s); }
 const room = params.get("room");
 if (room) { els.roomCode.value = room.toUpperCase(); joinRoom(room); }
+

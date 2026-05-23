@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --focus-ring: 0 0 0 3px rgba(28, 107, 82, 0.2);
   --danger: #b84a3b;
   --danger-bg: #fff1ee;
@@ -61,6 +61,12 @@ input[type="text"] {
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--ink);
+}
+
+#pieceImageInput,
+#pieceImagePlayerSelect {
+  border-color: rgba(200, 141, 40, 0.34);
+  background: linear-gradient(180deg, #fffaf0, #f6ead3);
 }
 
 .settings-grid {
@@ -481,3 +487,4 @@ input[type="text"] {
     border-width: 5px;
   }
 }
+

@@ -1,4 +1,4 @@
-import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+﻿import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getDatabase,
   onDisconnect,
@@ -24,6 +24,20 @@ const database = getDatabase(app);
 const ROOMS_PATH = "manualRoomsV1";
 const SEAT_PREFIX = "custom-reversi-seat:";
 const CLIENT_PREFIX = "custom-reversi-client:";
+
+function storageGet(key) {
+  return localStorage.getItem(key) ?? sessionStorage.getItem(key);
+}
+
+function storageSet(key, value) {
+  localStorage.setItem(key, value);
+  sessionStorage.setItem(key, value);
+}
+
+function storageRemove(key) {
+  localStorage.removeItem(key);
+  sessionStorage.removeItem(key);
+}
 
 function createRoomId() {
   const bytes = crypto.getRandomValues(new Uint8Array(5));
@@ -63,7 +77,7 @@ class LocalRoomClient {
     const roomId = createRoomId();
     const clientId = crypto.randomUUID();
     const room = createInitialRoom({ roomId, rules, hostClientId: clientId });
-    sessionStorage.setItem(`${CLIENT_PREFIX}${roomId}`, clientId);
+    storageSet(`${CLIENT_PREFIX}${roomId}`, clientId);
     const ready = set(ref(database, `${ROOMS_PATH}/${roomId}`), room);
     const client = new LocalRoomClient({ roomId, clientId, assignedPlayer: 1, ready });
     client.startHeartbeat(1);
@@ -74,11 +88,11 @@ class LocalRoomClient {
     const normalizedRoomId = String(roomId || "").trim().toLowerCase();
     const clientKey = `${CLIENT_PREFIX}${normalizedRoomId}`;
     if (forceNewClient) {
-      sessionStorage.removeItem(clientKey);
-      sessionStorage.removeItem(`${SEAT_PREFIX}${normalizedRoomId}`);
+      storageRemove(clientKey);
+      storageRemove(`${SEAT_PREFIX}${normalizedRoomId}`);
     }
-    const clientId = sessionStorage.getItem(clientKey) ?? crypto.randomUUID();
-    sessionStorage.setItem(clientKey, clientId);
+    const clientId = storageGet(clientKey) ?? crypto.randomUUID();
+    storageSet(clientKey, clientId);
     const client = new LocalRoomClient({ roomId: normalizedRoomId, clientId });
     client.ready = client.claimNextSeat();
     return client;
@@ -89,20 +103,20 @@ class LocalRoomClient {
   }
 
   getAssignedPlayer() {
-    const rawSeat = sessionStorage.getItem(`${SEAT_PREFIX}${this.roomId}`);
+    const rawSeat = storageGet(`${SEAT_PREFIX}${this.roomId}`);
     if (!rawSeat) return null;
 
     try {
       const seat = JSON.parse(rawSeat);
       return seat.clientId === this.clientId ? seat.player : null;
     } catch {
-      sessionStorage.removeItem(`${SEAT_PREFIX}${this.roomId}`);
+      storageRemove(`${SEAT_PREFIX}${this.roomId}`);
       return null;
     }
   }
 
   storeAssignedPlayer(player) {
-    sessionStorage.setItem(`${SEAT_PREFIX}${this.roomId}`, JSON.stringify({
+    storageSet(`${SEAT_PREFIX}${this.roomId}`, JSON.stringify({
       player,
       clientId: this.clientId,
     }));
@@ -205,3 +219,4 @@ class LocalRoomClient {
 }
 
 export { LocalRoomClient };
+
