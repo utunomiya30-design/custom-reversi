@@ -365,14 +365,27 @@ input[type="text"] {
   box-shadow: 0 12px 28px rgba(36, 29, 19, 0.08);
 }
 
-.local-ranking-panel h3 {
+.global-ranking-panel {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0;
+  padding: 14px;
+  border: 1px solid rgba(31, 93, 71, 0.18);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f0f8f3, #e1eee7);
+  box-shadow: 0 12px 28px rgba(31, 93, 71, 0.08);
+}
+
+.local-ranking-panel h3,
+.global-ranking-panel h3 {
   margin: 0;
   color: var(--ink);
   font-size: 0.98rem;
   font-weight: 900;
 }
 
-.local-ranking-panel ol {
+.local-ranking-panel ol,
+.global-ranking-panel ol {
   display: grid;
   gap: 8px;
   margin: 0;
@@ -380,7 +393,8 @@ input[type="text"] {
   list-style: none;
 }
 
-.local-ranking-panel li {
+.local-ranking-panel li,
+.global-ranking-panel li {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -391,12 +405,14 @@ input[type="text"] {
   background: rgba(255, 255, 255, 0.72);
 }
 
-.local-ranking-panel span {
+.local-ranking-panel span,
+.global-ranking-panel span {
   color: var(--ink);
   font-weight: 900;
 }
 
-.local-ranking-panel small {
+.local-ranking-panel small,
+.global-ranking-panel small {
   color: var(--muted);
   font-size: 0.76rem;
   font-weight: 800;
