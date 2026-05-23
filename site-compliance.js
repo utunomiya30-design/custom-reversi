@@ -1,6 +1,8 @@
 const links = [
   ["./", "ゲーム"],
   ["./guide.html", "遊び方"],
+  ["./strategy.html", "戦略ガイド"],
+  ["./faq.html", "FAQ"],
   ["./about.html", "サイト情報"],
   ["./contact.html", "お問い合わせ"],
   ["./privacy.html", "プライバシー"],
