@@ -1,24 +1,36 @@
-const STORAGE_PREFIX = "custom-reversi-room:";
+import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  getDatabase,
+  onValue,
+  ref,
+  runTransaction,
+  set,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAIiqR-0frAfSNlMeXNfUqwNPs2fgsVQBw",
+  authDomain: "custom-reversi.firebaseapp.com",
+  databaseURL: "https://custom-reversi-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "custom-reversi",
+  storageBucket: "custom-reversi.firebasestorage.app",
+  messagingSenderId: "735539430711",
+  appId: "1:735539430711:web:c324fa54c6f6b9d899c6b2",
+};
+
+const app = getApps()[0] ?? initializeApp(firebaseConfig);
+const database = getDatabase(app);
+const ROOMS_PATH = "manualRoomsV1";
 const SEAT_PREFIX = "custom-reversi-seat:";
 const CLIENT_PREFIX = "custom-reversi-client:";
 
 function createRoomId() {
-  const bytes = crypto.getRandomValues(new Uint8Array(6));
+  const bytes = crypto.getRandomValues(new Uint8Array(5));
   return Array.from(bytes, (byte) => byte.toString(36).padStart(2, "0")).join("").slice(0, 8);
 }
 
-function readRoom(roomId) {
-  const raw = localStorage.getItem(`${STORAGE_PREFIX}${roomId}`);
-  return raw ? JSON.parse(raw) : null;
-}
-
-function writeRoom(roomId, room) {
-  localStorage.setItem(`${STORAGE_PREFIX}${roomId}`, JSON.stringify(room));
-}
-
-function createInitialRoom({ rules, hostClientId }) {
+function createInitialRoom({ roomId, rules, hostClientId }) {
   return {
-    id: createRoomId(),
+    id: roomId,
     version: 1,
     rules,
     board: null,
@@ -34,48 +46,41 @@ function createInitialRoom({ rules, hostClientId }) {
 }
 
 class LocalRoomClient {
-  constructor({ roomId, clientId = crypto.randomUUID(), assignedPlayer = null }) {
+  constructor({ roomId, clientId = crypto.randomUUID(), assignedPlayer = null, ready = Promise.resolve() }) {
     this.roomId = roomId;
     this.clientId = clientId;
-    if (assignedPlayer) {
-      this.storeAssignedPlayer(assignedPlayer);
-    }
-    this.channel = new BroadcastChannel(`custom-reversi:${roomId}`);
+    this.ready = ready;
+    this.room = null;
+    this.unsubscribe = null;
     this.listeners = new Set();
-    this.channel.addEventListener("message", (event) => {
-      if (event.data?.type === "room-updated") {
-        this.emit(readRoom(this.roomId));
-      }
-    });
+    if (assignedPlayer) this.storeAssignedPlayer(assignedPlayer);
   }
 
   static createRoom({ rules }) {
+    const roomId = createRoomId();
     const clientId = crypto.randomUUID();
-    const room = createInitialRoom({ rules, hostClientId: clientId });
-    writeRoom(room.id, room);
-    sessionStorage.setItem(`${CLIENT_PREFIX}${room.id}`, clientId);
-    return new LocalRoomClient({ roomId: room.id, clientId, assignedPlayer: 1 });
+    const room = createInitialRoom({ roomId, rules, hostClientId: clientId });
+    sessionStorage.setItem(`${CLIENT_PREFIX}${roomId}`, clientId);
+    const ready = set(ref(database, `${ROOMS_PATH}/${roomId}`), room);
+    return new LocalRoomClient({ roomId, clientId, assignedPlayer: 1, ready });
   }
 
   static joinRoom({ roomId, forceNewClient = false }) {
-    const room = readRoom(roomId);
-    if (!room) {
-      throw new Error("room_not_found");
-    }
-    const clientKey = `${CLIENT_PREFIX}${roomId}`;
+    const normalizedRoomId = String(roomId || "").trim().toLowerCase();
+    const clientKey = `${CLIENT_PREFIX}${normalizedRoomId}`;
     if (forceNewClient) {
       sessionStorage.removeItem(clientKey);
-      sessionStorage.removeItem(`${SEAT_PREFIX}${roomId}`);
+      sessionStorage.removeItem(`${SEAT_PREFIX}${normalizedRoomId}`);
     }
     const clientId = sessionStorage.getItem(clientKey) ?? crypto.randomUUID();
     sessionStorage.setItem(clientKey, clientId);
-    const client = new LocalRoomClient({ roomId, clientId });
-    client.claimNextSeat();
+    const client = new LocalRoomClient({ roomId: normalizedRoomId, clientId });
+    client.ready = client.claimNextSeat();
     return client;
   }
 
   getRoom() {
-    return readRoom(this.roomId);
+    return this.room;
   }
 
   getAssignedPlayer() {
@@ -98,67 +103,62 @@ class LocalRoomClient {
     }));
   }
 
-  claimNextSeat() {
-    const room = this.getRoom();
-    if (!room) throw new Error("room_not_found");
+  async claimNextSeat() {
+    let claimedSeat = null;
+    await runTransaction(ref(database, `${ROOMS_PATH}/${this.roomId}`), (room) => {
+      if (!room) return room;
 
-    const assigned = this.getAssignedPlayer();
-    if (assigned) return assigned;
-
-    const existingSeat = Object.entries(room.players)
-      .find(([, clientId]) => clientId === this.clientId);
-    if (existingSeat) {
-      const player = Number(existingSeat[0]);
-      this.storeAssignedPlayer(player);
-      return player;
-    }
-
-    for (let player = 1; player <= room.rules.playerCount; player += 1) {
-      if (!room.players[player]) {
-        room.players[player] = this.clientId;
-        this.storeAssignedPlayer(player);
-        room.updatedAt = Date.now();
-        this.updateRoom(room);
-        return player;
+      const existingSeat = Object.entries(room.players ?? {})
+        .find(([, clientId]) => clientId === this.clientId);
+      if (existingSeat) {
+        claimedSeat = Number(existingSeat[0]);
+        return room;
       }
-    }
 
-    return null;
+      room.players = room.players ?? {};
+      for (let player = 1; player <= room.rules.playerCount; player += 1) {
+        if (!room.players[player]) {
+          room.players[player] = this.clientId;
+          claimedSeat = player;
+          room.updatedAt = Date.now();
+          break;
+        }
+      }
+      return room;
+    });
+
+    if (claimedSeat) this.storeAssignedPlayer(claimedSeat);
+    return claimedSeat;
   }
 
   setGameState({ board, currentPlayer, finished, winner, lastMessage }) {
-    const room = this.getRoom();
-    if (!room) throw new Error("room_not_found");
-    room.board = board;
-    room.currentPlayer = currentPlayer;
-    room.finished = finished;
-    room.lastMessage = lastMessage ?? room.lastMessage ?? "";
-    room.winner = winner ?? null;
-    room.version += 1;
-    room.updatedAt = Date.now();
-    this.updateRoom(room);
-  }
-
-  updateRoom(room) {
-    writeRoom(this.roomId, room);
-    this.channel.postMessage({ type: "room-updated", roomId: this.roomId });
-    this.emit(room);
+    this.ready.then(() => runTransaction(ref(database, `${ROOMS_PATH}/${this.roomId}`), (room) => {
+      if (!room) return room;
+      room.board = board;
+      room.currentPlayer = currentPlayer;
+      room.finished = finished;
+      room.lastMessage = lastMessage ?? room.lastMessage ?? "";
+      room.winner = winner ?? null;
+      room.version = (room.version ?? 0) + 1;
+      room.updatedAt = Date.now();
+      return room;
+    })).catch((error) => console.warn("Manual room sync failed", error));
   }
 
   subscribe(listener) {
     this.listeners.add(listener);
-    listener(this.getRoom());
+    if (!this.unsubscribe) {
+      this.unsubscribe = onValue(ref(database, `${ROOMS_PATH}/${this.roomId}`), (snapshot) => {
+        this.room = snapshot.val();
+        for (const currentListener of this.listeners) currentListener(this.room);
+      });
+    }
     return () => this.listeners.delete(listener);
   }
 
-  emit(room) {
-    for (const listener of this.listeners) {
-      listener(room);
-    }
-  }
-
   close() {
-    this.channel.close();
+    if (this.unsubscribe) this.unsubscribe();
+    this.unsubscribe = null;
     this.listeners.clear();
   }
 }
