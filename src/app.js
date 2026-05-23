@@ -9,7 +9,7 @@ import {
   rankPlayers,
   scoreBoard,
 } from "./reversi-core.js";
-import { LocalRoomClient } from "./online-local-room.js";
+import { LocalRoomClient } from "./online-local-room.js?v=20260524-presence-1";
 
 const COLORS = { 1: "#141414", 2: "#f7f3ea", 3: "#f02f2f", 4: "#176cff" };
 const LANG = {
@@ -52,6 +52,9 @@ let roomClient = null;
 let assignedPlayer = null;
 let unsub = null;
 let suppressRoomSync = false;
+const OFFLINE_GRACE_MS = 15000;
+const OFFLINE_CPU_DELAY_MS = 1600;
+let offlineCpuPlayers = new Set();
 
 function dict() { return LANG[els.lang.value] ?? LANG[ALIASES[els.lang.value]] ?? LANG.en; }
 function label(player) { return dict().labels[player]; }
@@ -118,9 +121,13 @@ function announce(msg) { if (state && !state.finished) { els.turn.textContent = 
 function createState(s) { const next = { ...s, board: createInitialBoard({ size: s.boardSize, playerCount: s.playerCount, cornerBoostPlayer: s.cornerBoostPlayer }), currentPlayer: 1, scoreMap: createScoreMap(s.boardSize), finished: false, lastMessage: dict().started }; next.currentPlayer = getNextPlayer(next.board, next.playerCount, next.playerCount).player ?? 1; return next; }
 function startGame({ syncOnline = true } = {}) { clearCpu(); state = createState(settings()); els.setup.classList.add("is-hidden"); els.result.classList.add("is-hidden"); els.play.classList.remove("is-hidden"); render(); if (syncOnline) syncRoom(); queueCpu(); }
 function clearCpu() { if (cpuTimer) clearTimeout(cpuTimer); cpuTimer = null; }
-function isCpu(p) { return state?.cpuMode === "opponents" && p >= 2; }
-function canCpuRun() { return !roomClient || assignedPlayer === 1; }
-function queueCpu() { clearCpu(); if (!state || state.finished || !isCpu(state.currentPlayer) || !canCpuRun()) return; els.turn.textContent = `${label(state.currentPlayer)} ${dict().thinking}`; cpuTimer = setTimeout(cpuMove, 420); }
+function isOfflineCpu(p) { return offlineCpuPlayers.has(p); }
+function isCpu(p) { return (state?.cpuMode === "opponents" && p >= 2) || isOfflineCpu(p); }
+function activePlayers(room) { const now = Date.now(); return Object.keys(room?.players ?? {}).map(Number).filter((p) => { const presence = room?.presence?.[p]; return presence?.connected && now - Number(presence.lastSeen ?? 0) < OFFLINE_GRACE_MS; }); }
+function stewardPlayer(room) { const active = activePlayers(room); return active.length ? Math.min(...active) : assignedPlayer; }
+function canCpuRun() { if (!roomClient) return true; const room = roomClient.getRoom(); return room ? assignedPlayer === stewardPlayer(room) : assignedPlayer === 1; }
+function updateOfflineCpuPlayers(room) { const next = new Set(); if (room?.board) { const now = Date.now(); for (let p = 1; p <= room.rules.playerCount; p++) { if (p === assignedPlayer) continue; const presence = room.presence?.[p]; const active = presence?.connected && now - Number(presence.lastSeen ?? 0) < OFFLINE_GRACE_MS; if (!active) next.add(p); } } offlineCpuPlayers = next; }
+function queueCpu() { clearCpu(); if (!state || state.finished || !isCpu(state.currentPlayer) || !canCpuRun()) return; const offline = isOfflineCpu(state.currentPlayer); els.turn.textContent = `${label(state.currentPlayer)} ${dict().thinking}${offline ? " (CPU)" : ""}`; cpuTimer = setTimeout(cpuMove, offline ? OFFLINE_CPU_DELAY_MS : 420); }
 function chooseCpuMove() { const moves = getLegalMoves(state.board, state.currentPlayer); if (!moves.length) return null; const last = state.boardSize - 1; return moves.map(m => ({ ...m, score: m.flips.length + (((m.row === 0 || m.row === last) && (m.col === 0 || m.col === last)) ? 20 : 0) })).sort((a, b) => b.score - a.score)[0]; }
 function cell(row, col) { return `${String.fromCharCode(65 + col)}${row + 1}`; }
 function moveMessage(p, row, col) { const d = dict(); return els.lang.value === "ja" ? `${label(p)} ${cell(row, col)} ${d.placed}` : `${label(p)} ${d.placed} ${cell(row, col)}`; }
@@ -137,10 +144,10 @@ function hint(x, y, r) { ctx.fillStyle = "rgba(255,255,255,.62)"; ctx.beginPath(
 function clickBoard(e) { if (!state || state.finished || isCpu(state.currentPlayer)) return; if (roomClient && assignedPlayer !== state.currentPlayer) return announce(dict().blocked); const rect = els.canvas.getBoundingClientRect(); const scale = els.canvas.width / rect.width; const c = els.canvas.width / state.boardSize; const row = Math.floor((e.clientY - rect.top) * scale / c); const col = Math.floor((e.clientX - rect.left) * scale / c); const prev = state.currentPlayer; const res = applyMove(state.board, row, col, prev); if (!res.ok) return; state.board = res.board; if (!advance(prev, row, col)) return; render(); syncRoom(); queueCpu(); }
 function finish() { clearCpu(); state.finished = true; const values = state.winMode === "score" ? scoreBoard(state.board, state.playerCount, state.scoreMap) : countStones(state.board, state.playerCount); const ranking = rankPlayers(values, state.winMode === "reverse" ? "reverse" : "classic"); const unit = state.winMode === "score" ? dict().points : dict().stones; els.ranks.replaceChildren(); ranking.forEach((entry, i) => { const li = document.createElement("li"); li.innerHTML = `<span>#${i + 1} ${label(entry.player)}</span><span class="rank-value">${entry.value} ${unit}</span>`; els.ranks.append(li); }); els.play.classList.add("is-hidden"); els.result.classList.remove("is-hidden"); syncRoom(); }
 function setRoomClient(client, key) { if (unsub) unsub(); if (roomClient) roomClient.close(); roomClient = client; unsub = roomClient.subscribe(applyRoom); assignedPlayer = roomClient.getAssignedPlayer(); els.roomCode.value = roomClient.roomId.toUpperCase(); els.online.textContent = `${key}: ${roomClient.roomId.toUpperCase()}`; updateRoomUrl(); }
-function applyRoom(room) { if (!room || suppressRoomSync) return; assignedPlayer = roomClient.getAssignedPlayer(); applySettings(room.rules); if (!room.board) return updateOnlineStatus(); state = { ...room.rules, board: room.board, currentPlayer: room.currentPlayer, scoreMap: createScoreMap(room.rules.boardSize), finished: room.finished, lastMessage: room.lastMessage ?? "" }; els.setup.classList.add("is-hidden"); els.play.classList.toggle("is-hidden", room.finished); els.result.classList.toggle("is-hidden", !room.finished); room.finished ? finish() : render(); queueCpu(); }
+function applyRoom(room) { if (!room || suppressRoomSync) return; assignedPlayer = roomClient.getAssignedPlayer(); updateOfflineCpuPlayers(room); applySettings(room.rules); if (!room.board) return updateOnlineStatus(); state = { ...room.rules, board: room.board, currentPlayer: room.currentPlayer, scoreMap: createScoreMap(room.rules.boardSize), finished: room.finished, lastMessage: room.lastMessage ?? "" }; els.setup.classList.add("is-hidden"); els.play.classList.toggle("is-hidden", room.finished); els.result.classList.toggle("is-hidden", !room.finished); room.finished ? finish() : render(); queueCpu(); }
 function syncRoom() { if (!roomClient || !state || suppressRoomSync) return; suppressRoomSync = true; roomClient.setGameState({ board: state.board, currentPlayer: state.currentPlayer, finished: state.finished, lastMessage: state.lastMessage }); suppressRoomSync = false; updateOnlineStatus(); }
 function updateRoomUrl() { if (!roomClient) return; const u = new URL(location.href); u.searchParams.set("room", roomClient.roomId); u.searchParams.set("rules", encodeRules(settings())); u.searchParams.delete("join"); history.replaceState(null, "", u); }
-function updateOnlineStatus() { if (!roomClient) return els.gameOnline.textContent = ""; const room = roomClient.getRoom(); if (!room) return; const count = Object.values(room.players).filter(Boolean).length; els.gameOnline.textContent = `${assignedPlayer ? `${dict().seat}: ${label(assignedPlayer)}` : dict().spectator} / ${dict().wait}: ${count}/${room.rules.playerCount} / Room: ${room.id.toUpperCase()}`; }
+function updateOnlineStatus() { if (!roomClient) return els.gameOnline.textContent = ""; const room = roomClient.getRoom(); if (!room) return; const count = activePlayers(room).length; const offline = [...offlineCpuPlayers].map(label).join(", "); els.gameOnline.textContent = `${assignedPlayer ? `${dict().seat}: ${label(assignedPlayer)}` : dict().spectator} / ${dict().wait}: ${count}/${room.rules.playerCount} / Room: ${room.id.toUpperCase()}${offline ? ` / CPU: ${offline}` : ""}`; }
 function createRoom() { setRoomClient(LocalRoomClient.createRoom({ rules: settings() }), dict().createRoom); startGame(); }
 function joinRoom(id) { try { const forceNewClient = new URLSearchParams(location.search).get("join") === "1"; setRoomClient(LocalRoomClient.joinRoom({ roomId: id.toLowerCase(), forceNewClient }), dict().join); } catch { els.online.textContent = dict().notFound; } }
 
