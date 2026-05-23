@@ -74,7 +74,9 @@ function ensurePanel() {
   panel = document.createElement("section");
   panel.className = "global-ranking-panel";
   panel.innerHTML = "<h3>みんなの最新リザルト</h3><ol></ol>";
-  document.querySelector(".local-ranking-panel")?.after(panel) ?? resultCard?.append(panel);
+  const localPanel = document.querySelector(".local-ranking-panel");
+  if (localPanel) localPanel.after(panel);
+  else resultCard?.append(panel);
   return panel;
 }
 
