@@ -17,6 +17,7 @@ const LOCALES = {
     onlineLead: "Créez un salon et partagez l'URL pour jouer depuis un autre onglet ou navigateur.",
     createRoomButton: "Créer un salon",
     randomMatchButton: "Match aléatoire",
+    cancelRandomMatchButton: "Annuler la recherche",
     roomCodeLabel: "Code du salon",
     joinRoomButton: "Rejoindre",
     nowPlaying: "Partie en cours",
@@ -67,6 +68,7 @@ const LOCALES = {
     onlineLead: "Crea una sala y comparte la URL para jugar desde otra pestaña o navegador.",
     createRoomButton: "Crear sala",
     randomMatchButton: "Partida aleatoria",
+    cancelRandomMatchButton: "Cancelar busqueda",
     roomCodeLabel: "Código de sala",
     joinRoomButton: "Unirse",
     nowPlaying: "Partida en curso",
@@ -117,6 +119,7 @@ const LOCALES = {
     onlineLead: "Erstelle einen Raum und teile die URL, um in einem anderen Tab oder Browser mitzuspielen.",
     createRoomButton: "Raum erstellen",
     randomMatchButton: "Zufallsmatch",
+    cancelRandomMatchButton: "Suche abbrechen",
     roomCodeLabel: "Raumcode",
     joinRoomButton: "Beitreten",
     nowPlaying: "Partie läuft",
@@ -167,6 +170,7 @@ const LOCALES = {
     onlineLead: "방을 만들고 URL을 공유하면 다른 탭이나 브라우저에서 참가할 수 있습니다.",
     createRoomButton: "방 만들기",
     randomMatchButton: "랜덤 매치",
+    cancelRandomMatchButton: "매칭 취소",
     roomCodeLabel: "방 코드",
     joinRoomButton: "참가하기",
     nowPlaying: "게임 중",
@@ -217,6 +221,7 @@ const LOCALES = {
     onlineLead: "创建房间并分享 URL 后，可从其他标签页或浏览器加入。",
     createRoomButton: "创建房间",
     randomMatchButton: "随机匹配",
+    cancelRandomMatchButton: "取消匹配",
     roomCodeLabel: "房间代码",
     joinRoomButton: "加入",
     nowPlaying: "游戏中",
@@ -354,6 +359,7 @@ function applyLocale() {
   if (nameLabel) nameLabel.textContent = text.nameLabel;
   if (nameInput) nameInput.placeholder = text.namePlaceholder;
   setText("#randomMatchButton", text.randomMatchButton);
+  setText("#cancelRandomMatchButton", text.cancelRandomMatchButton);
 
   translateSelect("#playerCountSelect", text.playerOptions);
   translateSelect("#winModeSelect", text.winOptions);

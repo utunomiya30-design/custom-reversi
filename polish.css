@@ -454,6 +454,16 @@ input[type="text"] {
   border-color: var(--danger);
 }
 
+#cancelRandomMatchButton {
+  border-color: rgba(184, 74, 59, 0.38);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+#cancelRandomMatchButton:hover:not(:disabled) {
+  border-color: var(--danger);
+}
+
 @keyframes custom-reversi-spin {
   to { transform: rotate(360deg); }
 }

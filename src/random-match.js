@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   get,
   getDatabase,
@@ -30,7 +30,7 @@ const firebaseConfig = {
   appId: "1:735539430711:web:c324fa54c6f6b9d899c6b2",
 };
 
-const app = initializeApp(firebaseConfig);
+const app = getApps()[0] ?? initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const WAITING_ROOM_TTL = 1000 * 60 * 10;
 const RANDOM_QUEUE_PATH = "randomQueueV5/current";
@@ -55,6 +55,7 @@ const NAME_TEXT = {
 
 const els = {
   button: document.querySelector("#randomMatchButton"),
+  cancelButton: document.querySelector("#cancelRandomMatchButton"),
   status: document.querySelector("#onlineStatus"),
   gameStatus: document.querySelector("#gameOnlineStatus"),
   form: document.querySelector("#settingsForm"),
@@ -83,6 +84,7 @@ let latestRoom = null;
 let applyingMove = false;
 let matchPlayerName = "";
 let lastSyncedName = "";
+let unsubscribeRoom = null;
 
 function updateNameText() {
   const text = NAME_TEXT[els.language?.value] ?? NAME_TEXT.en;
@@ -93,6 +95,19 @@ function updateNameText() {
 function setStatus(message) {
   if (els.status) els.status.textContent = message;
   if (els.gameStatus && started) els.gameStatus.textContent = message;
+}
+
+function setRandomMatchWaiting(isWaiting) {
+  if (els.button) els.button.disabled = isWaiting;
+  if (els.cancelButton) {
+    els.cancelButton.classList.toggle("is-hidden", !isWaiting);
+    els.cancelButton.disabled = !isWaiting;
+  }
+}
+
+function detachRoomListeners() {
+  if (typeof unsubscribeRoom === "function") unsubscribeRoom();
+  unsubscribeRoom = null;
 }
 
 function roomRef(roomId = currentMatch?.roomId) {
@@ -143,6 +158,56 @@ function applyRoomRulesToControls(roomRules) {
 
 function joinedCount(room) {
   return Object.values(room?.players ?? {}).filter(Boolean).length;
+}
+
+async function removeMatchingQueue(roomIdValue) {
+  const queueRef = ref(database, RANDOM_QUEUE_PATH);
+  const queued = (await get(queueRef)).val();
+  if (queued?.roomId === roomIdValue) await remove(queueRef);
+}
+
+async function cancelRandomMatch() {
+  if (!currentMatch || started) return;
+
+  const match = currentMatch;
+  setRandomMatchWaiting(false);
+  detachRoomListeners();
+  setStatus("ランダムマッチをキャンセルしています...");
+
+  try {
+    let shouldRequeue = false;
+    await runTransaction(ref(database, `${RANDOM_ROOMS_PATH}/${match.roomId}`), (room) => {
+      if (!room || room.board) return room;
+      const players = { ...(room.players ?? {}) };
+      const playerNames = { ...(room.playerNames ?? {}) };
+      if (players[match.seat] !== clientId()) return room;
+      delete players[match.seat];
+      delete playerNames[match.seat];
+      const remaining = Object.values(players).filter(Boolean).length;
+      if (remaining === 0 || match.seat === 1) return null;
+      shouldRequeue = true;
+      return {
+        ...room,
+        players,
+        playerNames,
+        updatedAt: Date.now(),
+      };
+    });
+    if (shouldRequeue) {
+      await set(ref(database, RANDOM_QUEUE_PATH), { roomId: match.roomId, createdAt: Date.now() });
+    } else {
+      await removeMatchingQueue(match.roomId);
+    }
+    currentMatch = null;
+    latestRoom = null;
+    setStatus("ランダムマッチをキャンセルしました");
+  } catch (error) {
+    console.error(error);
+    currentMatch = match;
+    attachRoomListeners();
+    setRandomMatchWaiting(true);
+    setStatus("キャンセルに失敗しました。もう一度押してください。");
+  }
 }
 
 function createInitialOnlineState(room) {
@@ -265,6 +330,7 @@ async function initializeRoomIfReady(room) {
 function startGameOnce(room) {
   if (started || !room || joinedCount(room) < room.rules.playerCount || !room.board) return;
   started = true;
+  setRandomMatchWaiting(false);
   applyRoomRulesToControls(room.rules);
   els.form?.requestSubmit();
   setStatus(`マッチ成立: ${currentMatch.roomId.toUpperCase()} / あなたは ${playerLabel(room, currentMatch.seat)}`);
@@ -476,9 +542,19 @@ function renderResult(room) {
 }
 
 function attachRoomListeners() {
-  onValue(roomRef(), async (snapshot) => {
+  detachRoomListeners();
+  unsubscribeRoom = onValue(roomRef(), async (snapshot) => {
     const room = snapshot.val();
-    if (!room) return;
+    if (!room) {
+      if (!started && currentMatch) {
+        currentMatch = null;
+        latestRoom = null;
+        setRandomMatchWaiting(false);
+        setStatus("ランダムマッチをキャンセルしました");
+      }
+      detachRoomListeners();
+      return;
+    }
     latestRoom = room;
     await syncOwnName(room);
     const count = joinedCount(room);
@@ -490,7 +566,7 @@ function attachRoomListeners() {
 }
 
 els.button?.addEventListener("click", async () => {
-  els.button.disabled = true;
+  setRandomMatchWaiting(true);
   matchPlayerName = readOwnName();
   lastSyncedName = "";
   setStatus("対戦相手を探しています...");
@@ -500,9 +576,11 @@ els.button?.addEventListener("click", async () => {
   } catch (error) {
     console.error(error);
     setStatus("ランダムマッチに失敗しました。Firebaseのルール設定を確認してください。");
-    els.button.disabled = false;
+    setRandomMatchWaiting(false);
   }
 });
+
+els.cancelButton?.addEventListener("click", cancelRandomMatch);
 
 els.canvas?.addEventListener("click", (event) => {
   if (!currentMatch || !started) return;
