@@ -1,5 +1,9 @@
 import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
+  getAuth,
+  onAuthStateChanged,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import {
   getDatabase,
   limitToLast,
   onValue,
@@ -20,6 +24,7 @@ const firebaseConfig = {
 };
 
 const app = getApps()[0] ?? initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const database = getDatabase(app);
 const RESULTS_PATH = "globalResultsV1";
 const POSTED_RESULT_KEY = "customReversiPostedResultId";
@@ -29,6 +34,7 @@ const rankingList = document.querySelector("#rankingList");
 const resultCard = document.querySelector(".result-card");
 
 let wasVisible = false;
+let currentUser = null;
 
 function selectedText(selector) {
   return document.querySelector(selector)?.selectedOptions?.[0]?.textContent?.trim() || "";
@@ -54,12 +60,15 @@ function parseWinner() {
 }
 
 async function postResult() {
+  if (!currentUser) return;
   const winner = parseWinner();
   if (!winner) return;
-  const localId = `${winner.label}|${currentRuleLabel()}|${Date.now().toString().slice(0, -4)}`;
+  const localId = `${currentUser.uid}|${winner.label}|${currentRuleLabel()}|${Date.now().toString().slice(0, -4)}`;
   if (sessionStorage.getItem(POSTED_RESULT_KEY) === localId) return;
   sessionStorage.setItem(POSTED_RESULT_KEY, localId);
   await push(ref(database, RESULTS_PATH), {
+    uid: currentUser.uid,
+    displayName: (currentUser.displayName || "").slice(0, 40),
     winner: winner.label,
     score: winner.score,
     rules: currentRuleLabel(),
@@ -109,5 +118,8 @@ function observeResult() {
 }
 
 watchGlobalResults();
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+});
 observeResult();
 new MutationObserver(observeResult).observe(resultPanel, { attributes: true, attributeFilter: ["class"] });

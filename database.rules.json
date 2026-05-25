@@ -92,13 +92,49 @@
       ".read": true,
       ".indexOn": ["createdAt"],
       "$resultId": {
-        ".write": "!data.exists() && newData.exists() && newData.hasChildren(['winner', 'score', 'rules', 'createdAt'])",
+        ".write": "auth != null && !data.exists() && newData.exists() && newData.hasChildren(['uid', 'winner', 'score', 'rules', 'createdAt']) && newData.child('uid').val() === auth.uid",
+        "uid": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "displayName": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 40)" },
         "winner": { ".validate": "newData.isString() && newData.val().length <= 100" },
         "score": { ".validate": "newData.isNumber() && newData.val() >= -9999 && newData.val() <= 9999" },
         "rules": { ".validate": "newData.isString() && newData.val().length <= 120" },
         "name": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 16)" },
         "createdAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
         "$other": { ".validate": false }
+      }
+    },
+
+    "userStatsV1": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "uid": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "displayName": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 40)" },
+        "photoURL": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 300)" },
+        "games": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+        "wins": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+        "losses": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+        "bestScore": { ".validate": "newData.isNumber() && newData.val() >= -9999 && newData.val() <= 9999" },
+        "lastPlayedAt": { ".validate": "!newData.exists() || (newData.isNumber() && newData.val() <= now + 60000)" },
+        "updatedAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "matchHistoryV1": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".indexOn": ["createdAt"],
+        "$matchId": {
+          ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists()",
+          "winner": { ".validate": "newData.isString() && newData.val().length <= 100" },
+          "score": { ".validate": "newData.isNumber() && newData.val() >= -9999 && newData.val() <= 9999" },
+          "rules": { ".validate": "newData.isString() && newData.val().length <= 120" },
+          "playerName": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 16)" },
+          "outcome": { ".validate": "newData.isString() && (newData.val() === 'win' || newData.val() === 'loss' || newData.val() === 'played')" },
+          "createdAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+          "$other": { ".validate": false }
+        }
       }
     }
   }
