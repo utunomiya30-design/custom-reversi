@@ -1,0 +1,105 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "manualRoomsV1": {
+      "$roomId": {
+        ".read": "$roomId.matches(/^[a-z0-9]{6,12}$/)",
+        ".write": "$roomId.matches(/^[a-z0-9]{6,12}$/) && (!newData.exists() || newData.child('id').val() === $roomId)",
+        ".validate": "!newData.exists() || newData.hasChildren(['id', 'rules', 'players', 'createdAt', 'updatedAt'])",
+        "id": { ".validate": "newData.isString() && newData.val() === $roomId" },
+        "version": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 100000" },
+        "rules": {
+          ".validate": "newData.hasChildren(['playerCount', 'boardSize', 'winMode'])",
+          "language": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 8)" },
+          "playerCount": { ".validate": "newData.isNumber() && newData.val() >= 2 && newData.val() <= 4" },
+          "boardSize": { ".validate": "newData.isNumber() && (newData.val() === 4 || newData.val() === 6 || newData.val() === 8 || newData.val() === 12 || newData.val() === 16)" },
+          "winMode": { ".validate": "newData.isString() && (newData.val() === 'classic' || newData.val() === 'reverse' || newData.val() === 'score')" },
+          "cornerBoostPlayer": { ".validate": "!newData.exists() || newData.val() === null || (newData.isNumber() && newData.val() >= 1 && newData.val() <= 4)" },
+          "cpuMode": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 16)" },
+          "$other": { ".validate": false }
+        },
+        "players": {
+          "$player": { ".validate": "$player.matches(/^[1-4]$/) && newData.isString() && newData.val().length <= 80" }
+        },
+        "presence": {
+          "$player": {
+            ".validate": "$player.matches(/^[1-4]$/)",
+            "clientId": { ".validate": "newData.isString() && newData.val().length <= 80" },
+            "player": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 4" },
+            "connected": { ".validate": "newData.isBoolean()" },
+            "lastSeen": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+            "$other": { ".validate": false }
+          }
+        },
+        "board": { ".validate": "!newData.exists() || newData.val() === null || newData.isString() || newData.hasChildren()" },
+        "currentPlayer": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 4" },
+        "finished": { ".validate": "newData.isBoolean()" },
+        "winner": { ".validate": "!newData.exists() || newData.val() === null || (newData.isNumber() && newData.val() >= 1 && newData.val() <= 4)" },
+        "lastMessage": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 240)" },
+        "createdAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+        "updatedAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "randomRoomsV5": {
+      "$roomId": {
+        ".read": "$roomId.matches(/^[a-z0-9]{6,12}$/)",
+        ".write": "$roomId.matches(/^[a-z0-9]{6,12}$/) && (!newData.exists() || newData.child('id').val() === $roomId)",
+        ".validate": "!newData.exists() || newData.hasChildren(['id', 'rules', 'players', 'createdAt', 'updatedAt'])",
+        "id": { ".validate": "newData.isString() && newData.val() === $roomId" },
+        "version": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 100000" },
+        "rules": {
+          ".validate": "newData.hasChildren(['playerCount', 'boardSize', 'winMode'])",
+          "language": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 8)" },
+          "playerCount": { ".validate": "newData.isNumber() && newData.val() >= 2 && newData.val() <= 4" },
+          "boardSize": { ".validate": "newData.isNumber() && (newData.val() === 4 || newData.val() === 6 || newData.val() === 8 || newData.val() === 12 || newData.val() === 16)" },
+          "winMode": { ".validate": "newData.isString() && (newData.val() === 'classic' || newData.val() === 'reverse' || newData.val() === 'score')" },
+          "cornerBoostPlayer": { ".validate": "!newData.exists() || newData.val() === null || (newData.isNumber() && newData.val() >= 1 && newData.val() <= 4)" },
+          "cpuMode": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 16)" },
+          "$other": { ".validate": false }
+        },
+        "players": {
+          "$player": { ".validate": "$player.matches(/^[1-4]$/) && (!newData.exists() || (newData.isString() && newData.val().length <= 80))" }
+        },
+        "playerNames": {
+          "$player": { ".validate": "$player.matches(/^[1-4]$/) && (!newData.exists() || (newData.isString() && newData.val().length <= 16))" }
+        },
+        "board": { ".validate": "!newData.exists() || newData.val() === null || newData.hasChildren()" },
+        "currentPlayer": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 4" },
+        "finished": { ".validate": "newData.isBoolean()" },
+        "winner": { ".validate": "!newData.exists() || newData.val() === null || (newData.isNumber() && newData.val() >= 1 && newData.val() <= 4)" },
+        "lastMessage": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 240)" },
+        "abandoned": { ".validate": "!newData.exists() || newData.isBoolean()" },
+        "createdAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+        "updatedAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "randomQueueV5": {
+      "current": {
+        ".read": true,
+        ".write": "!newData.exists() || (newData.hasChildren(['roomId', 'createdAt']) && newData.child('roomId').isString() && newData.child('roomId').val().matches(/^[a-z0-9]{6,12}$/) && newData.child('createdAt').isNumber() && newData.child('createdAt').val() <= now + 60000)",
+        "$other": { ".validate": false }
+      },
+      "$other": { ".read": false, ".write": false }
+    },
+
+    "globalResultsV1": {
+      ".read": true,
+      ".indexOn": ["createdAt"],
+      "$resultId": {
+        ".write": "!data.exists() && newData.exists() && newData.hasChildren(['winner', 'score', 'rules', 'createdAt'])",
+        "winner": { ".validate": "newData.isString() && newData.val().length <= 100" },
+        "score": { ".validate": "newData.isNumber() && newData.val() >= -9999 && newData.val() <= 9999" },
+        "rules": { ".validate": "newData.isString() && newData.val().length <= 120" },
+        "name": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 16)" },
+        "createdAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}
