@@ -8,6 +8,7 @@ import {
   set,
   update,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAIiqR-0frAfSNlMeXNfUqwNPs2fgsVQBw",
@@ -20,6 +21,7 @@ const firebaseConfig = {
 };
 
 const app = getApps()[0] ?? initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const database = getDatabase(app);
 const ROOMS_PATH = "manualRoomsV1";
 const SEAT_PREFIX = "custom-reversi-seat:";
@@ -74,6 +76,7 @@ class LocalRoomClient {
   }
 
   static createRoom({ rules }) {
+    requireSignedIn();
     const roomId = createRoomId();
     const clientId = crypto.randomUUID();
     const room = createInitialRoom({ roomId, rules, hostClientId: clientId });
@@ -85,6 +88,7 @@ class LocalRoomClient {
   }
 
   static joinRoom({ roomId, forceNewClient = false }) {
+    requireSignedIn();
     const normalizedRoomId = String(roomId || "").trim().toLowerCase();
     const clientKey = `${CLIENT_PREFIX}${normalizedRoomId}`;
     if (forceNewClient) {
@@ -218,5 +222,13 @@ class LocalRoomClient {
   }
 }
 
-export { LocalRoomClient };
+function isOnlineSignedIn() {
+  return Boolean(auth.currentUser);
+}
+
+function requireSignedIn() {
+  if (!isOnlineSignedIn()) throw new Error("ONLINE_AUTH_REQUIRED");
+}
+
+export { LocalRoomClient, isOnlineSignedIn };
 

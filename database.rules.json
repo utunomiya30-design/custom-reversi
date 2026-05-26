@@ -5,8 +5,8 @@
 
     "manualRoomsV1": {
       "$roomId": {
-        ".read": "$roomId.matches(/^[a-z0-9]{6,12}$/)",
-        ".write": "$roomId.matches(/^[a-z0-9]{6,12}$/) && (!newData.exists() || newData.child('id').val() === $roomId)",
+        ".read": "auth != null && $roomId.matches(/^[a-z0-9]{6,12}$/)",
+        ".write": "auth != null && $roomId.matches(/^[a-z0-9]{6,12}$/) && (!newData.exists() || newData.child('id').val() === $roomId)",
         ".validate": "!newData.exists() || newData.hasChildren(['id', 'rules', 'players', 'createdAt', 'updatedAt'])",
         "id": { ".validate": "newData.isString() && newData.val() === $roomId" },
         "version": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 100000" },
@@ -46,8 +46,8 @@
 
     "randomRoomsV5": {
       "$roomId": {
-        ".read": "$roomId.matches(/^[a-z0-9]{6,12}$/)",
-        ".write": "$roomId.matches(/^[a-z0-9]{6,12}$/) && (!newData.exists() || newData.child('id').val() === $roomId)",
+        ".read": "auth != null && $roomId.matches(/^[a-z0-9]{6,12}$/)",
+        ".write": "auth != null && $roomId.matches(/^[a-z0-9]{6,12}$/) && (!newData.exists() || newData.child('id').val() === $roomId)",
         ".validate": "!newData.exists() || newData.hasChildren(['id', 'rules', 'players', 'createdAt', 'updatedAt'])",
         "id": { ".validate": "newData.isString() && newData.val() === $roomId" },
         "version": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 100000" },
@@ -81,15 +81,15 @@
 
     "randomQueueV5": {
       "current": {
-        ".read": true,
-        ".write": "!newData.exists() || (newData.hasChildren(['roomId', 'createdAt']) && newData.child('roomId').isString() && newData.child('roomId').val().matches(/^[a-z0-9]{6,12}$/) && newData.child('createdAt').isNumber() && newData.child('createdAt').val() <= now + 60000)",
+        ".read": "auth != null",
+        ".write": "auth != null && (!newData.exists() || (newData.hasChildren(['roomId', 'createdAt']) && newData.child('roomId').isString() && newData.child('roomId').val().matches(/^[a-z0-9]{6,12}$/) && newData.child('createdAt').isNumber() && newData.child('createdAt').val() <= now + 60000))",
         "$other": { ".validate": false }
       },
       "$other": { ".read": false, ".write": false }
     },
 
     "globalResultsV1": {
-      ".read": true,
+      ".read": "auth != null",
       ".indexOn": ["createdAt"],
       "$resultId": {
         ".write": "auth != null && !data.exists() && newData.exists() && newData.hasChildren(['uid', 'winner', 'score', 'rules', 'createdAt']) && newData.child('uid').val() === auth.uid",

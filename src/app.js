@@ -9,7 +9,7 @@
   rankPlayers,
   scoreBoard,
 } from "./reversi-core.js";
-import { LocalRoomClient } from "./online-local-room.js?v=20260524-reconnect-1";
+import { LocalRoomClient, isOnlineSignedIn } from "./online-local-room.js?v=20260526-auth-required-1";
 
 const COLORS = { 1: "#141414", 2: "#f7f3ea", 3: "#f02f2f", 4: "#176cff" };
 const LANG = {
@@ -21,7 +21,7 @@ const LANG = {
     createRoom: "部屋を作る", roomCode: "部屋コード", join: "参加する", invite: "招待URLをコピー", restart: "リノベーション", back: "トップに戻る",
     none: "なし", cpuOpp: "2P以降をCPU", classic: "通常", reverse: "逆転", score: "スコア", copied: "URLをコピーしました",
     thinking: "CPU思考中", started: "ゲーム開始", placed: "が置きました", pass: "は置けないためパス", final: "最終結果", resultShare: "この結果をSNSで自慢する",
-    ad: "Advertisement", largeAd: "Interstitial / Large Banner", seat: "担当", wait: "参加待ち", spectator: "観戦中", blocked: "オンライン対戦では自分のターンだけ操作できます", notFound: "部屋が見つかりません",
+    ad: "Advertisement", largeAd: "Interstitial / Large Banner", seat: "担当", wait: "参加待ち", spectator: "観戦中", blocked: "オンライン対戦では自分のターンだけ操作できます", notFound: "部屋が見つかりません", loginRequired: "オンライン対戦はGoogleログイン後に使えます",
   },
   en: {
     title: "Custom Reversi", lead: "Tune the player count, board size, and win condition, then play local multiplayer right away.",
@@ -31,7 +31,7 @@ const LANG = {
     createRoom: "Create room", roomCode: "Room code", join: "Join room", invite: "Copy invite URL", restart: "Restart", back: "Back to top",
     none: "None", cpuOpp: "CPU from 2P", classic: "Classic", reverse: "Reverse", score: "Score", copied: "URL copied",
     thinking: "CPU thinking", started: "Game started", placed: "placed at", pass: "has no legal move and passed", final: "Final Result", resultShare: "Share this result",
-    ad: "Advertisement", largeAd: "Interstitial / Large Banner", seat: "Seat", wait: "Waiting", spectator: "Spectating", blocked: "Online games only allow moves on your own turn", notFound: "Room not found",
+    ad: "Advertisement", largeAd: "Interstitial / Large Banner", seat: "Seat", wait: "Waiting", spectator: "Spectating", blocked: "Online games only allow moves on your own turn", notFound: "Room not found", loginRequired: "Sign in with Google to use online play",
   },
 };
 const ALIASES = { fr: "en", es: "en", de: "en", ko: "en", zh: "en" };
@@ -152,8 +152,9 @@ function applyRoom(room) { if (!room || suppressRoomSync) return; assignedPlayer
 function syncRoom() { if (!roomClient || !state || suppressRoomSync) return; suppressRoomSync = true; roomClient.setGameState({ board: state.board, currentPlayer: state.currentPlayer, finished: state.finished, lastMessage: state.lastMessage }); suppressRoomSync = false; updateOnlineStatus(); }
 function updateRoomUrl() { if (!roomClient) return; const u = new URL(location.href); u.searchParams.set("room", roomClient.roomId); u.searchParams.set("rules", encodeRules(settings())); u.searchParams.delete("join"); history.replaceState(null, "", u); }
 function updateOnlineStatus() { if (!roomClient) return els.gameOnline.textContent = ""; const room = roomClient.getRoom(); if (!room) return; const count = activePlayers(room).length; const offline = [...offlineCpuPlayers].map(label).join(", "); els.gameOnline.textContent = `${assignedPlayer ? `${dict().seat}: ${label(assignedPlayer)}` : dict().spectator} / ${dict().wait}: ${count}/${room.rules.playerCount} / Room: ${room.id.toUpperCase()}${offline ? ` / CPU: ${offline}` : ""}`; }
-function createRoom() { setRoomClient(LocalRoomClient.createRoom({ rules: settings() }), dict().createRoom); startGame(); }
-function joinRoom(id) { try { const forceNewClient = new URLSearchParams(location.search).get("join") === "1"; setRoomClient(LocalRoomClient.joinRoom({ roomId: id.toLowerCase(), forceNewClient }), dict().join); } catch { els.online.textContent = dict().notFound; } }
+function requireOnlineLogin() { if (isOnlineSignedIn()) return true; els.online.textContent = dict().loginRequired; return false; }
+function createRoom() { if (!requireOnlineLogin()) return; setRoomClient(LocalRoomClient.createRoom({ rules: settings() }), dict().createRoom); startGame(); }
+function joinRoom(id) { if (!requireOnlineLogin()) return; try { const forceNewClient = new URLSearchParams(location.search).get("join") === "1"; setRoomClient(LocalRoomClient.joinRoom({ roomId: id.toLowerCase(), forceNewClient }), dict().join); } catch { els.online.textContent = dict().notFound; } }
 
 els.form.addEventListener("submit", e => { e.preventDefault(); startGame(); });
 els.lang.addEventListener("change", () => { const s = settings(); populateOptions(s); translate(); });

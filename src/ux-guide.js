@@ -1,4 +1,5 @@
 import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { getDatabase, onValue, ref } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
 const firebaseConfig = {
@@ -151,30 +152,52 @@ function showWaitingCount(count) {
 
 function watchWaitingCount() {
   let unsubscribeRoom = null;
+  let unsubscribeQueue = null;
   const app = getApps()[0] ?? initializeApp(firebaseConfig);
+  const auth = getAuth(app);
   const database = getDatabase(app);
 
-  onValue(ref(database, RANDOM_QUEUE_PATH), (snapshot) => {
+  function stop() {
     if (unsubscribeRoom) {
       unsubscribeRoom();
       unsubscribeRoom = null;
     }
-
-    const queue = snapshot.val();
-    if (!queue?.roomId || Date.now() - queue.createdAt > WAITING_ROOM_TTL) {
-      showWaitingCount(0);
-      return;
+    if (unsubscribeQueue) {
+      unsubscribeQueue();
+      unsubscribeQueue = null;
     }
+    showWaitingCount(0);
+  }
 
-    unsubscribeRoom = onValue(ref(database, `${RANDOM_ROOMS_PATH}/${queue.roomId}`), (roomSnapshot) => {
-      const room = roomSnapshot.val();
-      const joined = countJoined(room);
-      const target = Number(room?.rules?.playerCount) || 2;
-      showWaitingCount(room && joined < target ? joined : 0);
-    }, () => showWaitingCount(0));
-  }, () => {
-    const node = ensureWaitingCount();
-    node.textContent = text().waitingError;
+  function start() {
+    if (unsubscribeQueue) return;
+    unsubscribeQueue = onValue(ref(database, RANDOM_QUEUE_PATH), (snapshot) => {
+      if (unsubscribeRoom) {
+        unsubscribeRoom();
+        unsubscribeRoom = null;
+      }
+
+      const queue = snapshot.val();
+      if (!queue?.roomId || Date.now() - queue.createdAt > WAITING_ROOM_TTL) {
+        showWaitingCount(0);
+        return;
+      }
+
+      unsubscribeRoom = onValue(ref(database, `${RANDOM_ROOMS_PATH}/${queue.roomId}`), (roomSnapshot) => {
+        const room = roomSnapshot.val();
+        const joined = countJoined(room);
+        const target = Number(room?.rules?.playerCount) || 2;
+        showWaitingCount(room && joined < target ? joined : 0);
+      }, () => showWaitingCount(0));
+    }, () => {
+      const node = ensureWaitingCount();
+      node.textContent = text().waitingError;
+    });
+  }
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) start();
+    else stop();
   });
 }
 

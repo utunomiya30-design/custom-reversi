@@ -8,6 +8,7 @@ import {
   runTransaction,
   set,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
   EMPTY,
   applyMove,
@@ -31,6 +32,7 @@ const firebaseConfig = {
 };
 
 const app = getApps()[0] ?? initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const database = getDatabase(app);
 const WAITING_ROOM_TTL = 1000 * 60 * 10;
 const RANDOM_QUEUE_PATH = "randomQueueV5/current";
@@ -566,6 +568,10 @@ function attachRoomListeners() {
 }
 
 els.button?.addEventListener("click", async () => {
+  if (!auth.currentUser) {
+    setStatus("ランダムマッチはGoogleログイン後に使えます");
+    return;
+  }
   setRandomMatchWaiting(true);
   matchPlayerName = readOwnName();
   lastSyncedName = "";

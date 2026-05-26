@@ -35,6 +35,7 @@ const resultCard = document.querySelector(".result-card");
 
 let wasVisible = false;
 let currentUser = null;
+let unsubscribeResults = null;
 
 function selectedText(selector) {
   return document.querySelector(selector)?.selectedOptions?.[0]?.textContent?.trim() || "";
@@ -103,8 +104,9 @@ function renderResults(records) {
 }
 
 function watchGlobalResults() {
+  if (unsubscribeResults) unsubscribeResults();
   const q = query(ref(database, RESULTS_PATH), orderByChild("createdAt"), limitToLast(10));
-  onValue(q, (snapshot) => {
+  unsubscribeResults = onValue(q, (snapshot) => {
     const records = Object.values(snapshot.val() || {}).sort((a, b) => b.createdAt - a.createdAt);
     renderResults(records);
   });
@@ -117,9 +119,14 @@ function observeResult() {
   wasVisible = nowVisible;
 }
 
-watchGlobalResults();
 onAuthStateChanged(auth, (user) => {
   currentUser = user;
+  if (user) {
+    watchGlobalResults();
+  } else if (unsubscribeResults) {
+    unsubscribeResults();
+    unsubscribeResults = null;
+  }
 });
 observeResult();
 new MutationObserver(observeResult).observe(resultPanel, { attributes: true, attributeFilter: ["class"] });
