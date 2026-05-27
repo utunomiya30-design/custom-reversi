@@ -145,14 +145,7 @@ function value(selector) {
 }
 
 function ensureSummary() {
-  let summary = $("#ruleSummary");
-  if (summary) return summary;
-  summary = document.createElement("section");
-  summary.id = "ruleSummary";
-  summary.className = "rule-summary";
-  summary.setAttribute("aria-live", "polite");
-  $(selectors.setupIntro)?.after(summary);
-  return summary;
+  return $("#ruleSummary");
 }
 
 function ensureOnlineHint() {
@@ -171,20 +164,8 @@ function chip(label, body) {
 
 function updateSummary() {
   const t = text();
-  const corner = value(selectors.corner) ? selectedText(selectors.corner) : t.none;
-  const cpu = value(selectors.cpu) === "opponents" ? t.cpuOpponents : t.cpuNone;
-  const html = `
-    <div class="rule-summary-title">${t.summaryTitle}</div>
-    <div class="rule-chip-row">
-      ${chip(t.board, selectedText(selectors.board))}
-      ${chip(t.players, selectedText(selectors.players))}
-      ${chip(t.win, selectedText(selectors.win))}
-      ${chip(t.corner, corner)}
-      ${chip(t.cpu, cpu)}
-    </div>
-  `;
   const summary = ensureSummary();
-  if (summary.innerHTML !== html) summary.innerHTML = html;
+  if (summary) summary.remove();
 
   const hint = ensureOnlineHint();
   const hintText = `${t.matchNote} ${t.onlineHint}`;
