@@ -2,8 +2,10 @@ import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.12
 import {
   GoogleAuthProvider,
   getAuth,
+  getRedirectResult,
   onAuthStateChanged,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
@@ -32,6 +34,7 @@ const app = getApps()[0] ?? initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
 const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt: "select_account" });
 const POSTED_USER_RESULT_KEY = "customReversiPostedUserResultId";
 const NAME_KEY = "customReversiPlayerName";
 
@@ -55,6 +58,19 @@ let currentUser = null;
 let wasResultVisible = false;
 let unsubscribeStats = null;
 let unsubscribeHistory = null;
+
+const AUTH_ERROR_MESSAGES = {
+  "auth/unauthorized-domain": "この公開URLがFirebase Authenticationの承認済みドメインに入っていません。Firebase Authentication > Settings > 承認済みドメインに utunomiya30-design.github.io を追加してください。",
+  "auth/operation-not-allowed": "Firebase AuthenticationでGoogleログインが有効になっていません。Sign-in methodでGoogleを有効にしてください。",
+  "auth/popup-blocked": "ポップアップがブロックされました。リダイレクトログインに切り替えます。",
+  "auth/popup-closed-by-user": "ログイン画面が閉じられました。もう一度ログインを押してください。",
+  "auth/cancelled-popup-request": "ログイン処理が重なりました。少し待ってからもう一度押してください。",
+};
+
+function authErrorMessage(error) {
+  const code = error?.code || "unknown";
+  return AUTH_ERROR_MESSAGES[code] || `ログインできませんでした。Firebase Authenticationの設定を確認してください。(${code})`;
+}
 
 function selectedText(selector) {
   return document.querySelector(selector)?.selectedOptions?.[0]?.textContent?.trim() || "";
@@ -198,7 +214,13 @@ function restoreName() {
 els.signIn?.addEventListener("click", () => {
   signInWithPopup(auth, provider).catch((error) => {
     console.warn("Google sign-in failed", error);
-    if (els.status) els.status.textContent = "ログインできませんでした。Firebase AuthenticationのGoogleログイン設定を確認してください。";
+    if (els.status) els.status.textContent = authErrorMessage(error);
+    if (error?.code === "auth/popup-blocked") {
+      signInWithRedirect(auth, provider).catch((redirectError) => {
+        console.warn("Google redirect sign-in failed", redirectError);
+        if (els.status) els.status.textContent = authErrorMessage(redirectError);
+      });
+    }
   });
 });
 
@@ -211,6 +233,10 @@ els.name?.addEventListener("input", () => {
 });
 
 restoreName();
+getRedirectResult(auth).catch((error) => {
+  console.warn("Google redirect result failed", error);
+  if (els.status) els.status.textContent = authErrorMessage(error);
+});
 onAuthStateChanged(auth, updateAuthUi);
 observeResult();
 if (els.resultPanel) {

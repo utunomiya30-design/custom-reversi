@@ -80,7 +80,9 @@ input[type="text"] {
 .language-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  width: 104px;
   min-height: 36px;
   padding: 6px 10px;
   border-color: rgba(91, 76, 52, 0.2);
@@ -98,7 +100,16 @@ input[type="text"] {
 }
 
 .language-flag {
+  display: inline-grid;
+  width: 18px;
+  place-items: center;
   font-size: 1rem;
+  line-height: 1;
+}
+
+.language-pill span:last-child {
+  min-width: 0;
+  font-size: 0.78rem;
   line-height: 1;
 }
 
@@ -646,7 +657,7 @@ input[type="text"] {
 
   .language-pill {
     flex: 1 1 calc(33.333% - 8px);
-    justify-content: center;
+    width: auto;
     padding-inline: 8px;
   }
 
