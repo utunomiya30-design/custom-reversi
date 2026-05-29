@@ -88,6 +88,12 @@ let matchPlayerName = "";
 let lastSyncedName = "";
 let unsubscribeRoom = null;
 
+function scrollToPanel(panel = els.play) {
+  requestAnimationFrame(() => {
+    panel?.scrollIntoView({ block: "start", behavior: "smooth" });
+  });
+}
+
 function updateNameText() {
   const text = NAME_TEXT[els.language?.value] ?? NAME_TEXT.en;
   if (els.nameLabel) els.nameLabel.textContent = text.label;
@@ -337,6 +343,7 @@ function startGameOnce(room) {
   els.form?.requestSubmit();
   setStatus(`マッチ成立: ${currentMatch.roomId.toUpperCase()} / あなたは ${playerLabel(room, currentMatch.seat)}`);
   renderRoom(room);
+  scrollToPanel();
 }
 
 function cellFromEvent(event) {
@@ -422,9 +429,11 @@ function renderRoom(room) {
   }
 
   if (started) {
+    const wasPlaying = !els.play?.classList.contains("is-hidden");
     els.setup?.classList.add("is-hidden");
     els.result?.classList.add("is-hidden");
     els.play?.classList.remove("is-hidden");
+    if (!wasPlaying) scrollToPanel();
   }
 
   if (els.turn) els.turn.textContent = `${playerLabel(room, room.currentPlayer)} のターン`;
@@ -540,6 +549,7 @@ function renderResult(room) {
 
   els.play?.classList.add("is-hidden");
   els.result?.classList.remove("is-hidden");
+  scrollToPanel(els.result);
   setStatus(`対戦終了 / Room: ${room.id.toUpperCase()}`);
 }
 
