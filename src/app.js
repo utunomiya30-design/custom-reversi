@@ -9,7 +9,7 @@
   rankPlayers,
   scoreBoard,
 } from "./reversi-core.js";
-import { LocalRoomClient, isOnlineSignedIn } from "./online-local-room.js?v=20260526-auth-required-1";
+import { LocalRoomClient, isOnlineSignedIn } from "./online-local-room.js?v=20260529-login-layout-1";
 
 const COLORS = { 1: "#141414", 2: "#f7f3ea", 3: "#f02f2f", 4: "#176cff" };
 const LANG = {
