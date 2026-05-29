@@ -581,7 +581,8 @@ els.button?.addEventListener("click", async () => {
     attachRoomListeners();
   } catch (error) {
     console.error(error);
-    setStatus("ランダムマッチに失敗しました。Firebaseのルール設定を確認してください。");
+    const code = error?.code || "unknown";
+    setStatus(`ランダムマッチに失敗しました。Firebaseのルール設定を確認してください。(${code})`);
     setRandomMatchWaiting(false);
   }
 });

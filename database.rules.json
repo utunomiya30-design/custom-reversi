@@ -83,6 +83,8 @@
       "current": {
         ".read": "auth != null",
         ".write": "auth != null && (!newData.exists() || (newData.hasChildren(['roomId', 'createdAt']) && newData.child('roomId').isString() && newData.child('roomId').val().matches(/^[a-z0-9]{6,12}$/) && newData.child('createdAt').isNumber() && newData.child('createdAt').val() <= now + 60000))",
+        "roomId": { ".validate": "newData.isString() && newData.val().matches(/^[a-z0-9]{6,12}$/)" },
+        "createdAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
         "$other": { ".validate": false }
       },
       "$other": { ".read": false, ".write": false }
