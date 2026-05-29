@@ -285,12 +285,12 @@ const TEXT_SELECTORS = {
   largeAdSlot: ".ad-slot-result",
 };
 
-const BASE_PLAYERS = [
-  [/(1P Black|1P 黒|1P Noir|1P Negro|1P Schwarz|1P 검정|1P 黑)/g, 1],
-  [/(2P White|2P 白|2P Blanc|2P Blanco|2P Weiß|2P 흰색|2P 白)/g, 2],
-  [/(3P Red|3P 赤|3P Rouge|3P Rojo|3P Rot|3P 빨강|3P 红)/g, 3],
-  [/(4P Blue|4P 青|4P Bleu|4P Azul|4P Blau|4P 파랑|4P 蓝)/g, 4],
-];
+const BASE_PLAYERS = {
+  1: ["1P Schwarz", "1P Negro", "1P Black", "1P Noir", "1P 黒", "1P 검정", "1P 黑"],
+  2: ["2P Blanco", "2P White", "2P Blanc", "2P Weiß", "2P 白", "2P 흰색"],
+  3: ["3P Rouge", "3P Rojo", "3P Red", "3P Rot", "3P 赤", "3P 빨강", "3P 红"],
+  4: ["4P Blue", "4P Bleu", "4P Azul", "4P Blau", "4P 青", "4P 파랑", "4P 蓝"],
+};
 
 function currentText() {
   return LOCALES[document.querySelector("#languageSelect")?.value] ?? null;
@@ -311,7 +311,12 @@ function translateSelect(id, labels) {
 
 function localizePlayers(value, text) {
   let next = value;
-  for (const [pattern, player] of BASE_PLAYERS) next = next.replace(pattern, text.players[player]);
+  for (const [player, labels] of Object.entries(BASE_PLAYERS)) {
+    for (const label of labels) {
+      const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      next = next.replace(new RegExp(`${escaped}(?![\\p{L}\\p{N}])`, "gu"), text.players[player]);
+    }
+  }
   return next;
 }
 

@@ -603,6 +603,11 @@ input[type="text"] {
   color: var(--ink);
 }
 
+.online-status,
+#gameOnlineStatus {
+  overflow-wrap: anywhere;
+}
+
 .account-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
