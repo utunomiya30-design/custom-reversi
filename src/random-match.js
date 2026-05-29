@@ -8,7 +8,10 @@ import {
   runTransaction,
   set,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import {
+  getAuth,
+  signInAnonymously,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import {
   EMPTY,
   applyMove,
@@ -111,6 +114,12 @@ function setRandomMatchWaiting(isWaiting) {
     els.cancelButton.classList.toggle("is-hidden", !isWaiting);
     els.cancelButton.disabled = !isWaiting;
   }
+}
+
+async function ensureGuestAuth() {
+  if (auth.currentUser) return auth.currentUser;
+  const credential = await signInAnonymously(auth);
+  return credential.user;
 }
 
 function detachRoomListeners() {
@@ -578,21 +587,22 @@ function attachRoomListeners() {
 }
 
 els.button?.addEventListener("click", async () => {
-  if (!auth.currentUser) {
-    setStatus("ランダムマッチはGoogleログイン後に使えます");
-    return;
-  }
   setRandomMatchWaiting(true);
   matchPlayerName = readOwnName();
   lastSyncedName = "";
-  setStatus("対戦相手を探しています...");
+  setStatus(auth.currentUser ? "対戦相手を探しています..." : "ゲストとしてオンライン接続中...");
   try {
+    await ensureGuestAuth();
+    setStatus("対戦相手を探しています...");
     currentMatch = await findOrCreateMatch();
     attachRoomListeners();
   } catch (error) {
     console.error(error);
     const code = error?.code || "unknown";
-    setStatus(`ランダムマッチに失敗しました。Firebaseのルール設定を確認してください。(${code})`);
+    const authHint = code === "auth/operation-not-allowed"
+      ? "Firebase Authenticationの匿名ログインを有効にしてください。"
+      : "Firebaseのルール設定を確認してください。";
+    setStatus(`ランダムマッチに失敗しました。${authHint}(${code})`);
     setRandomMatchWaiting(false);
   }
 });

@@ -8,7 +8,10 @@ import {
   set,
   update,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import {
+  getAuth,
+  signInAnonymously,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAIiqR-0frAfSNLMeXNfUqwNPs2fgsVQBw",
@@ -226,9 +229,15 @@ function isOnlineSignedIn() {
   return Boolean(auth.currentUser);
 }
 
+async function ensureOnlineAuth() {
+  if (auth.currentUser) return auth.currentUser;
+  const credential = await signInAnonymously(auth);
+  return credential.user;
+}
+
 function requireSignedIn() {
   if (!isOnlineSignedIn()) throw new Error("ONLINE_AUTH_REQUIRED");
 }
 
-export { LocalRoomClient, isOnlineSignedIn };
+export { LocalRoomClient, ensureOnlineAuth, isOnlineSignedIn };
 

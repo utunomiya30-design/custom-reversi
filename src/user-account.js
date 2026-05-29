@@ -144,14 +144,26 @@ function renderHistory(snapshotValue) {
 }
 
 function updateAuthUi(user) {
-  currentUser = user;
-  els.signIn?.classList.toggle("is-hidden", Boolean(user));
+  const isGuest = Boolean(user?.isAnonymous);
+  currentUser = isGuest ? null : user;
+  els.signIn?.classList.toggle("is-hidden", Boolean(user && !isGuest));
   els.signOut?.classList.toggle("is-hidden", !user);
-  els.stats?.classList.toggle("is-hidden", !user);
-  els.historyPanel?.classList.toggle("is-hidden", !user);
+  els.stats?.classList.toggle("is-hidden", !user || isGuest);
+  els.historyPanel?.classList.toggle("is-hidden", !user || isGuest);
 
   if (!user) {
     if (els.status) els.status.textContent = "Googleログインすると、自分の戦績と最近の対戦履歴を保存できます。";
+    renderStats();
+    els.history?.replaceChildren();
+    if (unsubscribeStats) unsubscribeStats();
+    if (unsubscribeHistory) unsubscribeHistory();
+    unsubscribeStats = null;
+    unsubscribeHistory = null;
+    return;
+  }
+
+  if (isGuest) {
+    if (els.status) els.status.textContent = "ゲストとしてオンライン対戦できます。戦績を保存するにはGoogleログインしてください。";
     renderStats();
     els.history?.replaceChildren();
     if (unsubscribeStats) unsubscribeStats();
