@@ -347,6 +347,7 @@ async function initializeRoomIfReady(room) {
 function startGameOnce(room) {
   if (started || !room || joinedCount(room) < room.rules.playerCount || !room.board) return;
   started = true;
+  document.body.dataset.onlineRoomPath = RANDOM_ROOMS_PATH;
   setRandomMatchWaiting(false);
   applyRoomRulesToControls(room.rules);
   els.form?.requestSubmit();

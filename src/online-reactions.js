@@ -12,7 +12,10 @@ const firebaseConfig = {
   appId: "1:735539430711:web:c324fa54c6f6b9d899c6b2",
 };
 
-const ROOM_PATHS = ["manualRoomsV1", "randomRoomsV5"];
+const ROOM_PATHS = {
+  manualRoomsV1: "manualRoomsV1",
+  randomRoomsV5: "randomRoomsV5",
+};
 const REACTIONS = ["nice", "wow", "think", "oops"];
 const COPY = {
   ja: {
@@ -86,7 +89,8 @@ const els = {
 };
 
 let currentRoomId = "";
-let unsubscribers = [];
+let currentRoomPath = "";
+let unsubscribeReaction = null;
 let lastReactionId = "";
 let toastTimer = null;
 
@@ -119,6 +123,13 @@ function copy() {
 function currentOnlineRoomId() {
   const text = `${els.status?.textContent || ""} ${els.setupStatus?.textContent || ""}`;
   return text.match(/Room:\s*([a-z0-9]+)/i)?.[1]?.toLowerCase() || "";
+}
+
+function currentOnlineRoomPath() {
+  if (document.body.dataset.onlineRoomPath) return document.body.dataset.onlineRoomPath;
+  const params = new URLSearchParams(location.search);
+  if (params.has("room")) return ROOM_PATHS.manualRoomsV1;
+  return ROOM_PATHS.randomRoomsV5;
 }
 
 function ownPlayer() {
@@ -157,11 +168,22 @@ function renderButtons() {
   updateCopy();
 }
 
+function parseReactionMessage(room) {
+  const message = room?.lastMessage || "";
+  const match = message.match(/^([1-4])P:\s*(.{1,40})$/);
+  if (!match) return null;
+  return {
+    id: `${room.updatedAt || 0}-${message}`,
+    player: Number(match[1]),
+    text: match[2],
+  };
+}
+
 function showReaction(reaction) {
   if (!reaction?.id || reaction.id === lastReactionId) return;
   lastReactionId = reaction.id;
   toast.hidden = false;
-  toast.innerHTML = `<strong>${playerName(reaction.player)}</strong><span>${reaction.text || copy().labels[reaction.kind] || reaction.kind}</span>`;
+  toast.innerHTML = `<strong>${playerName(reaction.player)}</strong><span>${reaction.text}</span>`;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
     toast.hidden = true;
@@ -169,27 +191,30 @@ function showReaction(reaction) {
 }
 
 function detachRoom() {
-  for (const unsubscribe of unsubscribers) unsubscribe();
-  unsubscribers = [];
+  if (unsubscribeReaction) unsubscribeReaction();
+  unsubscribeReaction = null;
   currentRoomId = "";
+  currentRoomPath = "";
 }
 
-function attachRoom(roomId) {
-  if (!roomId || roomId === currentRoomId) return;
+function attachRoom(roomId, roomPath) {
+  if (!roomId || !roomPath || (roomId === currentRoomId && roomPath === currentRoomPath)) return;
   detachRoom();
   currentRoomId = roomId;
-  for (const path of ROOM_PATHS) {
-    const unsubscribe = onValue(ref(database, `${path}/${roomId}/reaction`), (snapshot) => showReaction(snapshot.val()));
-    unsubscribers.push(unsubscribe);
-  }
+  currentRoomPath = roomPath;
+  unsubscribeReaction = onValue(ref(database, `${roomPath}/${roomId}`), (snapshot) => showReaction(parseReactionMessage(snapshot.val())), (error) => {
+    console.warn("Reaction listener failed", error);
+    setReactionStatus(copy().failed);
+  });
 }
 
 function updateVisibility() {
   const roomId = currentOnlineRoomId();
+  const roomPath = currentOnlineRoomPath();
   const playing = els.playPanel && !els.playPanel.classList.contains("is-hidden");
   panel.classList.toggle("is-hidden", !playing || !roomId);
   if (playing && roomId) {
-    attachRoom(roomId);
+    attachRoom(roomId, roomPath);
     setReactionStatus("");
   } else {
     detachRoom();
@@ -205,8 +230,9 @@ async function ensureAuth() {
 
 async function sendReaction(kind) {
   const roomId = currentOnlineRoomId();
+  const roomPath = currentOnlineRoomPath();
   const player = ownPlayer();
-  if (!roomId || !player) {
+  if (!roomId || !roomPath || !player) {
     setReactionStatus(copy().offline);
     return;
   }
@@ -215,7 +241,6 @@ async function sendReaction(kind) {
   const reaction = {
     id: `${Date.now()}-${crypto.randomUUID()}`,
     player,
-    kind,
     text,
     createdAt: Date.now(),
   };
@@ -223,10 +248,10 @@ async function sendReaction(kind) {
   for (const button of buttons.querySelectorAll("button")) button.disabled = true;
   try {
     await ensureAuth();
-    const results = await Promise.allSettled(
-      ROOM_PATHS.map((path) => update(ref(database, `${path}/${roomId}`), { reaction })),
-    );
-    if (!results.some((result) => result.status === "fulfilled")) throw new Error("REACTION_WRITE_FAILED");
+    await update(ref(database, `${roomPath}/${roomId}`), {
+      lastMessage: `${player}P: ${text}`,
+      updatedAt: reaction.createdAt,
+    });
     showReaction(reaction);
     setReactionStatus(copy().sent);
   } catch (error) {
