@@ -1,0 +1,251 @@
+import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getDatabase, onValue, ref, update } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAIiqR-0frAfSNLMeXNfUqwNPs2fgsVQBw",
+  authDomain: "custom-reversi.firebaseapp.com",
+  databaseURL: "https://custom-reversi-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "custom-reversi",
+  storageBucket: "custom-reversi.firebasestorage.app",
+  messagingSenderId: "735539430711",
+  appId: "1:735539430711:web:c324fa54c6f6b9d899c6b2",
+};
+
+const ROOM_PATHS = ["manualRoomsV1", "randomRoomsV5"];
+const REACTIONS = ["nice", "wow", "think", "oops"];
+const COPY = {
+  ja: {
+    title: "リアクション",
+    sent: "リアクションを送りました",
+    offline: "オンライン対戦中に使えます",
+    failed: "リアクションを送れませんでした。Firebaseルールを確認してください。",
+    players: ["", "1P 黒", "2P 白", "3P 赤", "4P 青"],
+    labels: { nice: "いいね", wow: "すごい", think: "考え中", oops: "しまった" },
+  },
+  en: {
+    title: "Reactions",
+    sent: "Reaction sent",
+    offline: "Available during online matches",
+    failed: "Could not send the reaction. Check Firebase rules.",
+    players: ["", "1P Black", "2P White", "3P Red", "4P Blue"],
+    labels: { nice: "Nice", wow: "Wow", think: "Thinking", oops: "Oops" },
+  },
+  fr: {
+    title: "Réactions",
+    sent: "Réaction envoyée",
+    offline: "Disponible en partie en ligne",
+    failed: "Impossible d'envoyer la réaction. Vérifiez les règles Firebase.",
+    players: ["", "1P Noir", "2P Blanc", "3P Rouge", "4P Bleu"],
+    labels: { nice: "Bien joué", wow: "Incroyable", think: "Je réfléchis", oops: "Oups" },
+  },
+  es: {
+    title: "Reacciones",
+    sent: "Reacción enviada",
+    offline: "Disponible durante partidas online",
+    failed: "No se pudo enviar la reacción. Revisa las reglas de Firebase.",
+    players: ["", "1P Negro", "2P Blanco", "3P Rojo", "4P Azul"],
+    labels: { nice: "Bien", wow: "Genial", think: "Pensando", oops: "Ups" },
+  },
+  de: {
+    title: "Reaktionen",
+    sent: "Reaktion gesendet",
+    offline: "Während Online-Partien verfügbar",
+    failed: "Reaktion konnte nicht gesendet werden. Prüfe die Firebase-Regeln.",
+    players: ["", "1P Schwarz", "2P Weiß", "3P Rot", "4P Blau"],
+    labels: { nice: "Stark", wow: "Wow", think: "Denke", oops: "Ups" },
+  },
+  ko: {
+    title: "리액션",
+    sent: "리액션을 보냈습니다",
+    offline: "온라인 대전 중에 사용할 수 있습니다",
+    failed: "리액션을 보낼 수 없습니다. Firebase 규칙을 확인하세요.",
+    players: ["", "1P 검정", "2P 흰색", "3P 빨강", "4P 파랑"],
+    labels: { nice: "좋아요", wow: "대단해", think: "생각 중", oops: "아차" },
+  },
+  zh: {
+    title: "反应",
+    sent: "已发送反应",
+    offline: "在线对战中可用",
+    failed: "无法发送反应。请检查 Firebase 规则。",
+    players: ["", "1P 黑", "2P 白", "3P 红", "4P 蓝"],
+    labels: { nice: "不错", wow: "厉害", think: "思考中", oops: "糟了" },
+  },
+};
+
+const app = getApps()[0] ?? initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const database = getDatabase(app);
+
+const els = {
+  playPanel: document.querySelector("#playPanel"),
+  status: document.querySelector("#gameOnlineStatus"),
+  setupStatus: document.querySelector("#onlineStatus"),
+  language: document.querySelector("#languageSelect"),
+  playActions: document.querySelector(".play-actions"),
+};
+
+let currentRoomId = "";
+let unsubscribers = [];
+let lastReactionId = "";
+let toastTimer = null;
+
+const panel = document.createElement("section");
+panel.className = "reaction-panel is-hidden";
+panel.setAttribute("aria-label", "リアクション");
+
+const heading = document.createElement("strong");
+heading.className = "reaction-title";
+
+const buttons = document.createElement("div");
+buttons.className = "reaction-buttons";
+
+const status = document.createElement("p");
+status.className = "reaction-status";
+status.setAttribute("aria-live", "polite");
+
+const toast = document.createElement("div");
+toast.className = "reaction-toast";
+toast.hidden = true;
+toast.setAttribute("aria-live", "polite");
+
+panel.append(heading, buttons, status, toast);
+els.playActions?.after(panel);
+
+function copy() {
+  return COPY[els.language?.value] || COPY.en;
+}
+
+function currentOnlineRoomId() {
+  const text = `${els.status?.textContent || ""} ${els.setupStatus?.textContent || ""}`;
+  return text.match(/Room:\s*([a-z0-9]+)/i)?.[1]?.toLowerCase() || "";
+}
+
+function ownPlayer() {
+  const text = `${els.status?.textContent || ""} ${els.setupStatus?.textContent || ""}`;
+  return Number(text.match(/([1-4])P/)?.[1] || 0) || null;
+}
+
+function playerName(player) {
+  return copy().players[player] || `${player}P`;
+}
+
+function setReactionStatus(message = "") {
+  status.textContent = message;
+}
+
+function updateCopy() {
+  const text = copy();
+  heading.textContent = text.title;
+  for (const button of buttons.querySelectorAll("button")) {
+    button.textContent = text.labels[button.dataset.kind] || button.dataset.kind;
+  }
+  if (panel.classList.contains("is-hidden")) return;
+  if (!currentOnlineRoomId()) setReactionStatus(text.offline);
+}
+
+function renderButtons() {
+  buttons.replaceChildren();
+  for (const kind of REACTIONS) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "reaction-button";
+    button.dataset.kind = kind;
+    button.addEventListener("click", () => sendReaction(kind));
+    buttons.append(button);
+  }
+  updateCopy();
+}
+
+function showReaction(reaction) {
+  if (!reaction?.id || reaction.id === lastReactionId) return;
+  lastReactionId = reaction.id;
+  toast.hidden = false;
+  toast.innerHTML = `<strong>${playerName(reaction.player)}</strong><span>${reaction.text || copy().labels[reaction.kind] || reaction.kind}</span>`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.hidden = true;
+  }, 2600);
+}
+
+function detachRoom() {
+  for (const unsubscribe of unsubscribers) unsubscribe();
+  unsubscribers = [];
+  currentRoomId = "";
+}
+
+function attachRoom(roomId) {
+  if (!roomId || roomId === currentRoomId) return;
+  detachRoom();
+  currentRoomId = roomId;
+  for (const path of ROOM_PATHS) {
+    const unsubscribe = onValue(ref(database, `${path}/${roomId}/reaction`), (snapshot) => showReaction(snapshot.val()));
+    unsubscribers.push(unsubscribe);
+  }
+}
+
+function updateVisibility() {
+  const roomId = currentOnlineRoomId();
+  const playing = els.playPanel && !els.playPanel.classList.contains("is-hidden");
+  panel.classList.toggle("is-hidden", !playing || !roomId);
+  if (playing && roomId) {
+    attachRoom(roomId);
+    setReactionStatus("");
+  } else {
+    detachRoom();
+    if (playing) setReactionStatus(copy().offline);
+  }
+}
+
+async function ensureAuth() {
+  if (auth.currentUser) return auth.currentUser;
+  const credential = await signInAnonymously(auth);
+  return credential.user;
+}
+
+async function sendReaction(kind) {
+  const roomId = currentOnlineRoomId();
+  const player = ownPlayer();
+  if (!roomId || !player) {
+    setReactionStatus(copy().offline);
+    return;
+  }
+
+  const text = copy().labels[kind] || kind;
+  const reaction = {
+    id: `${Date.now()}-${crypto.randomUUID()}`,
+    player,
+    kind,
+    text,
+    createdAt: Date.now(),
+  };
+
+  for (const button of buttons.querySelectorAll("button")) button.disabled = true;
+  try {
+    await ensureAuth();
+    const results = await Promise.allSettled(
+      ROOM_PATHS.map((path) => update(ref(database, `${path}/${roomId}`), { reaction })),
+    );
+    if (!results.some((result) => result.status === "fulfilled")) throw new Error("REACTION_WRITE_FAILED");
+    showReaction(reaction);
+    setReactionStatus(copy().sent);
+  } catch (error) {
+    console.warn("Reaction failed", error);
+    setReactionStatus(copy().failed);
+  } finally {
+    window.setTimeout(() => {
+      for (const button of buttons.querySelectorAll("button")) button.disabled = false;
+    }, 700);
+  }
+}
+
+renderButtons();
+new MutationObserver(updateVisibility).observe(document.body, {
+  childList: true,
+  subtree: true,
+  characterData: true,
+  attributes: true,
+  attributeFilter: ["class"],
+});
+els.language?.addEventListener("change", updateCopy);
+updateVisibility();
