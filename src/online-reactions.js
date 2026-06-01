@@ -142,6 +142,7 @@ function playerName(player) {
 }
 
 function setReactionStatus(message = "") {
+  if (status.textContent === message) return;
   status.textContent = message;
 }
 

@@ -298,14 +298,16 @@ function currentText() {
 
 function setText(selector, value) {
   const node = document.querySelector(selector);
-  if (node && typeof value === "string") node.textContent = value;
+  if (node && typeof value === "string" && node.textContent !== value) node.textContent = value;
 }
 
 function translateSelect(id, labels) {
   const select = document.querySelector(id);
   if (!select) return;
   for (const option of select.options) {
-    if (Object.hasOwn(labels, option.value)) option.textContent = labels[option.value];
+    if (Object.hasOwn(labels, option.value) && option.textContent !== labels[option.value]) {
+      option.textContent = labels[option.value];
+    }
   }
 }
 
@@ -354,15 +356,16 @@ function translateDynamicText(root, text) {
 function applyLocale() {
   const text = currentText();
   if (!text) return;
-  document.documentElement.lang = document.querySelector("#languageSelect")?.value || "ja";
-  document.title = text.appTitle;
+  const language = document.querySelector("#languageSelect")?.value || "ja";
+  if (document.documentElement.lang !== language) document.documentElement.lang = language;
+  if (document.title !== text.appTitle) document.title = text.appTitle;
 
   for (const [key, selector] of Object.entries(TEXT_SELECTORS)) setText(selector, text[key]);
 
   const nameInput = document.querySelector("#playerNameInput");
   const nameLabel = nameInput?.closest("label")?.querySelector("span");
-  if (nameLabel) nameLabel.textContent = text.nameLabel;
-  if (nameInput) nameInput.placeholder = text.namePlaceholder;
+  if (nameLabel && nameLabel.textContent !== text.nameLabel) nameLabel.textContent = text.nameLabel;
+  if (nameInput && nameInput.placeholder !== text.namePlaceholder) nameInput.placeholder = text.namePlaceholder;
   setText("#randomMatchButton", text.randomMatchButton);
   setText("#cancelRandomMatchButton", text.cancelRandomMatchButton);
 
