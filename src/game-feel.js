@@ -22,6 +22,10 @@ gameHeader?.insertAdjacentElement("afterend", hud);
 const timerChip = hud.querySelector("#turnTimerChip strong");
 const lastMoveChip = hud.querySelector("#lastMoveChip strong");
 
+function reactionLog(text) {
+  return text.match(/^([1-4])P:\s*(.{1,40})$/);
+}
+
 function isVisible(node) {
   return node && !node.classList.contains("is-hidden");
 }
@@ -64,7 +68,13 @@ function updateTimer() {
 function updateLastMove() {
   if (!lastMoveChip || !moveLog) return;
   const text = moveLog.textContent.trim();
-  if (text) lastMoveChip.textContent = text;
+  const reaction = reactionLog(text);
+  moveLog.classList.toggle("is-reaction-log", Boolean(reaction));
+  if (reaction) {
+    lastMoveChip.textContent = `リアクション ${reaction[1]}P「${reaction[2]}」`;
+  } else if (text) {
+    lastMoveChip.textContent = text;
+  }
 }
 
 function pulseBoard() {
@@ -89,7 +99,8 @@ new MutationObserver(() => {
 
 new MutationObserver(() => {
   updateLastMove();
-  if (moveLog?.textContent.trim()) pulseBoard();
+  const text = moveLog?.textContent.trim() || "";
+  if (text && !reactionLog(text)) pulseBoard();
 }).observe(moveLog, { childList: true, characterData: true, subtree: true });
 
 new MutationObserver(updateCurrentScore).observe(scoreRow, { childList: true, subtree: true });

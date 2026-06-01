@@ -117,6 +117,7 @@ function addSoundToggle(target) {
 function moveKind(text) {
   if (!text || text === lastMoveText) return null;
   lastMoveText = text;
+  if (/^[1-4]P:\s*/.test(text)) return "tap";
   if (/パス|passed|passe|pasa|passt|패스|跳过/.test(text)) return "pass";
   return "move";
 }
