@@ -17,6 +17,12 @@ const ROOM_PATHS = {
   randomRoomsV5: "randomRoomsV5",
 };
 const REACTIONS = ["nice", "wow", "think", "oops"];
+const REACTION_EMOJIS = {
+  nice: "\u{1F44D}",
+  wow: "\u{1F62E}",
+  think: "\u{1F914}",
+  oops: "\u{1F605}",
+};
 const COPY = {
   ja: {
     title: "リアクション",
@@ -141,6 +147,30 @@ function playerName(player) {
   return copy().players[player] || `${player}P`;
 }
 
+function reactionLabel(kind) {
+  return copy().labels[kind] || kind;
+}
+
+function reactionText(kind) {
+  const emoji = REACTION_EMOJIS[kind] || "\u2728";
+  return `${emoji} ${reactionLabel(kind)}`;
+}
+
+function renderButtonContent(button) {
+  const kind = button.dataset.kind;
+  const emoji = document.createElement("span");
+  emoji.className = "reaction-button-emoji";
+  emoji.setAttribute("aria-hidden", "true");
+  emoji.textContent = REACTION_EMOJIS[kind] || "\u2728";
+
+  const label = document.createElement("span");
+  label.className = "reaction-button-label";
+  label.textContent = reactionLabel(kind);
+
+  button.setAttribute("aria-label", reactionLabel(kind));
+  button.replaceChildren(emoji, label);
+}
+
 function setReactionStatus(message = "") {
   if (status.textContent === message) return;
   status.textContent = message;
@@ -150,7 +180,7 @@ function updateCopy() {
   const text = copy();
   heading.textContent = text.title;
   for (const button of buttons.querySelectorAll("button")) {
-    button.textContent = text.labels[button.dataset.kind] || button.dataset.kind;
+    renderButtonContent(button);
   }
   if (panel.classList.contains("is-hidden")) return;
   if (!currentOnlineRoomId()) setReactionStatus(text.offline);
@@ -184,7 +214,11 @@ function showReaction(reaction) {
   if (!reaction?.id || reaction.id === lastReactionId) return;
   lastReactionId = reaction.id;
   toast.hidden = false;
-  toast.innerHTML = `<strong>${playerName(reaction.player)}</strong><span>${reaction.text}</span>`;
+  const player = document.createElement("strong");
+  player.textContent = playerName(reaction.player);
+  const message = document.createElement("span");
+  message.textContent = reaction.text;
+  toast.replaceChildren(player, message);
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
     toast.hidden = true;
@@ -238,7 +272,7 @@ async function sendReaction(kind) {
     return;
   }
 
-  const text = copy().labels[kind] || kind;
+  const text = reactionText(kind);
   const reaction = {
     id: `${Date.now()}-${crypto.randomUUID()}`,
     player,

@@ -718,6 +718,10 @@ input[type="text"] {
 }
 
 .reaction-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   min-width: 0;
   padding-inline: 10px;
   border-color: rgba(31, 93, 71, 0.2);
@@ -725,6 +729,17 @@ input[type="text"] {
   color: var(--ink);
   font-size: 0.86rem;
   white-space: nowrap;
+}
+
+.reaction-button-emoji {
+  font-size: 1.08rem;
+  line-height: 1;
+}
+
+.reaction-button-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .reaction-button:hover:not(:disabled) {
