@@ -759,31 +759,50 @@ input[type="text"] {
 .reaction-toast {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 10px);
+  bottom: calc(100% + 2px);
   display: inline-flex;
   align-items: center;
   gap: 10px;
   max-width: min(92vw, 420px);
-  padding: 10px 13px;
-  border: 1px solid rgba(31, 93, 71, 0.28);
-  border-radius: 999px;
-  background: rgba(255, 253, 247, 0.98);
-  box-shadow: 0 18px 42px rgba(36, 29, 19, 0.18);
-  transform: translateX(-50%);
-  animation: reaction-pop 0.26s ease-out;
+  padding: 11px 15px;
+  border: 1px solid rgba(31, 93, 71, 0.24);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 252, 0.98), rgba(255, 247, 232, 0.98));
+  box-shadow: 0 18px 42px rgba(36, 29, 19, 0.16);
+  opacity: 0;
+  transform: translate(-50%, 14px) scale(0.96);
   z-index: 4;
+}
+
+.reaction-toast::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  border-right: 1px solid rgba(31, 93, 71, 0.22);
+  border-bottom: 1px solid rgba(31, 93, 71, 0.22);
+  background: rgba(255, 247, 232, 0.98);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.reaction-toast.is-floating {
+  animation: reaction-float 2.8s ease-out forwards;
 }
 
 .reaction-toast strong {
   color: var(--green-dark);
   font-size: 0.78rem;
   white-space: nowrap;
+  z-index: 1;
 }
 
 .reaction-toast span {
   color: var(--ink);
   font-size: 0.95rem;
   font-weight: 900;
+  z-index: 1;
 }
 
 .reaction-toast[hidden] {
@@ -932,15 +951,30 @@ input[type="text"] {
   }
 }
 
-@keyframes reaction-pop {
+@keyframes reaction-float {
   0% {
     opacity: 0;
-    transform: translate(-50%, 8px) scale(0.96);
+    transform: translate(-50%, 16px) scale(0.94) rotate(0deg);
+  }
+
+  14% {
+    opacity: 1;
+    transform: translate(calc(-50% - 4px), 0) scale(1) rotate(-0.5deg);
+  }
+
+  46% {
+    opacity: 1;
+    transform: translate(calc(-50% + 8px), -30px) scale(1.01) rotate(0.7deg);
+  }
+
+  76% {
+    opacity: 0.88;
+    transform: translate(calc(-50% - 6px), -58px) scale(1) rotate(-0.4deg);
   }
 
   100% {
-    opacity: 1;
-    transform: translate(-50%, 0) scale(1);
+    opacity: 0;
+    transform: translate(calc(-50% + 4px), -88px) scale(0.98) rotate(0.2deg);
   }
 }
 

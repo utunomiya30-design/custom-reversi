@@ -219,10 +219,14 @@ function showReaction(reaction) {
   const message = document.createElement("span");
   message.textContent = reaction.text;
   toast.replaceChildren(player, message);
+  toast.classList.remove("is-floating");
+  void toast.offsetWidth;
+  toast.classList.add("is-floating");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
     toast.hidden = true;
-  }, 2600);
+    toast.classList.remove("is-floating");
+  }, 2800);
 }
 
 function detachRoom() {
