@@ -38,8 +38,8 @@
       }
     </script>
     <link rel="stylesheet" href="./styles.css?v=20260520-premium-1">
-    <link rel="stylesheet" href="./top-art.css?v=20260529-login-layout-1">
-    <link rel="stylesheet" href="./polish.css?v=20260602-reaction-bubble-1">
+    <link rel="stylesheet" href="./top-art.css?v=20260607-launch-polish-1">
+    <link rel="stylesheet" href="./polish.css?v=20260607-launch-polish-1">
     <link rel="stylesheet" href="./site-compliance.css?v=20260520-premium-1">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1361559686394936" crossorigin="anonymous"></script>
     <script>
@@ -117,35 +117,6 @@
             盤面サイズ、人数、勝利条件を自由に変えて遊べるリバーシです。ランダムマッチでは先に待っている相手のルールに自動で合わせて、すぐにオンライン対戦できます。
           </div>
 
-          <section class="quick-presets" id="quickPresets" aria-label="おすすめモード">
-            <div class="quick-presets-head">
-              <span>おすすめモード</span>
-              <strong>迷ったらここから</strong>
-            </div>
-            <div class="preset-grid">
-              <button type="button" class="preset-card" data-preset="classic" data-players="2" data-board="8" data-win="classic" data-corner="" data-cpu="none">
-                <span>定番</span>
-                <strong>まずは8x8</strong>
-                <small>ふつうのリバーシ感で、初見でもすぐ遊べます。</small>
-              </button>
-              <button type="button" class="preset-card" data-preset="chaos3" data-players="3" data-board="8" data-win="score" data-corner="" data-cpu="none">
-                <span>人気</span>
-                <strong>3人スコア戦</strong>
-                <small>横取りが起きやすく、最後まで順位が揺れます。</small>
-              </button>
-              <button type="button" class="preset-card" data-preset="party4" data-players="4" data-board="12" data-win="score" data-corner="" data-cpu="none">
-                <span>カオス</span>
-                <strong>4人パーティ</strong>
-                <small>色が入り乱れる、スクショ向きの大乱戦です。</small>
-              </button>
-              <button type="button" class="preset-card" data-preset="reverse" data-players="4" data-board="6" data-win="reverse" data-corner="" data-cpu="none">
-                <span>逆転</span>
-                <strong>少ない方が勝ち</strong>
-                <small>いつもの強手が罠になる、短時間の変則戦です。</small>
-              </button>
-            </div>
-          </section>
-
           <label>
             <span data-i18n="languageLabel">Language</span>
             <select id="languageSelect">
@@ -176,16 +147,6 @@
           </label>
 
           <label>
-            <span data-i18n="winModeLabel">勝利条件</span>
-            <select id="winModeSelect"></select>
-          </label>
-
-          <label>
-            <span data-i18n="cornerBoostLabel">角スタート</span>
-            <select id="cornerBoostSelect"></select>
-          </label>
-
-          <label>
             <span data-i18n="cpuModeLabel">CPUプレイヤー</span>
             <select id="cpuModeSelect"></select>
           </label>
@@ -193,26 +154,6 @@
           <label>
             <span>あなたの名前</span>
             <input id="playerNameInput" type="text" maxlength="16" autocomplete="nickname" placeholder="例: おぎ">
-          </label>
-
-          <label>
-            <span data-i18n="backgroundLabel">背景画像</span>
-            <input id="backgroundInput" type="file" accept="image/png,image/jpeg">
-          </label>
-
-          <label>
-            <span>駒画像を貼る色</span>
-            <select id="pieceImagePlayerSelect">
-              <option value="1">1P 黒</option>
-              <option value="2">2P 白</option>
-              <option value="3">3P 赤</option>
-              <option value="4">4P 青</option>
-            </select>
-          </label>
-
-          <label>
-            <span>駒画像</span>
-            <input id="pieceImageInput" type="file" accept="image/png,image/jpeg,image/webp">
           </label>
 
           <div class="actions">
@@ -237,6 +178,72 @@
             </div>
             <p class="online-status" id="onlineStatus" aria-live="polite"></p>
           </div>
+
+          <section class="advanced-settings" aria-label="詳細カスタム">
+            <div class="advanced-settings-head">
+              <span>詳細カスタム</span>
+              <strong>ルールや見た目を変える</strong>
+            </div>
+
+            <section class="quick-presets" id="quickPresets" aria-label="おすすめモード">
+              <div class="quick-presets-head">
+                <span>おすすめモード</span>
+                <strong>迷ったらここから</strong>
+              </div>
+              <div class="preset-grid">
+                <button type="button" class="preset-card" data-preset="classic" data-players="2" data-board="8" data-win="classic" data-corner="" data-cpu="none">
+                  <span>定番</span>
+                  <strong>まずは8x8</strong>
+                  <small>ふつうのリバーシ感で、初見でもすぐ遊べます。</small>
+                </button>
+                <button type="button" class="preset-card" data-preset="chaos3" data-players="3" data-board="8" data-win="score" data-corner="" data-cpu="none">
+                  <span>人気</span>
+                  <strong>3人スコア戦</strong>
+                  <small>横取りが起きやすく、最後まで順位が揺れます。</small>
+                </button>
+                <button type="button" class="preset-card" data-preset="party4" data-players="4" data-board="12" data-win="score" data-corner="" data-cpu="none">
+                  <span>カオス</span>
+                  <strong>4人パーティ</strong>
+                  <small>色が入り乱れる、スクショ向きの大乱戦です。</small>
+                </button>
+                <button type="button" class="preset-card" data-preset="reverse" data-players="4" data-board="6" data-win="reverse" data-corner="" data-cpu="none">
+                  <span>逆転</span>
+                  <strong>少ない方が勝ち</strong>
+                  <small>いつもの強手が罠になる、短時間の変則戦です。</small>
+                </button>
+              </div>
+            </section>
+
+            <label>
+              <span data-i18n="winModeLabel">勝利条件</span>
+              <select id="winModeSelect"></select>
+            </label>
+
+            <label>
+              <span data-i18n="cornerBoostLabel">角スタート</span>
+              <select id="cornerBoostSelect"></select>
+            </label>
+
+            <label>
+              <span data-i18n="backgroundLabel">背景画像</span>
+              <input id="backgroundInput" type="file" accept="image/png,image/jpeg">
+            </label>
+
+            <label>
+              <span>駒画像を貼る色</span>
+              <select id="pieceImagePlayerSelect">
+                <option value="1">1P 黒</option>
+                <option value="2">2P 白</option>
+                <option value="3">3P 赤</option>
+                <option value="4">4P 青</option>
+              </select>
+            </label>
+
+            <label>
+              <span>駒画像</span>
+              <input id="pieceImageInput" type="file" accept="image/png,image/jpeg,image/webp">
+            </label>
+          </section>
         </form>
       </section>
 
@@ -268,6 +275,10 @@
         <div class="result-card">
           <p class="kicker" data-i18n="resultKicker">Result</p>
           <h2 data-i18n="finalResult">最終結果</h2>
+          <section class="final-board-panel" aria-label="最終盤面">
+            <strong>最終盤面</strong>
+            <canvas id="resultBoardCanvas" width="720" height="720" aria-label="最終盤面の画像"></canvas>
+          </section>
           <ol id="rankingList"></ol>
           <div class="large-ad-slot ad-slot ad-slot-result" aria-label="大型広告枠" data-i18n-aria="adAria" data-i18n="largeAdSlot" data-ad-placement="result-large">Interstitial / Large Banner</div>
           <div class="result-actions">
@@ -300,9 +311,9 @@
     </footer>
 
     <script src="./site-compliance.js?v=20260524-adsense-content-2"></script>
-    <script type="module" src="./src/app.js?v=20260607-finish-freeze-1"></script>
+    <script type="module" src="./src/app.js?v=20260607-launch-polish-1"></script>
     <script type="module" src="./src/ads.js?v=20260520-premium-1"></script>
-    <script type="module" src="./src/random-match.js?v=20260601-online-reaction-fix-1"></script>
+    <script type="module" src="./src/random-match.js?v=20260607-launch-polish-1"></script>
     <script type="module" src="./src/online-reset.js?v=20260529-login-layout-1"></script>
     <script type="module" src="./src/online-reactions.js?v=20260602-reaction-bubble-1"></script>
     <script type="module" src="./src/fr-localization.js?v=20260602-start-freeze-1"></script>
@@ -313,7 +324,7 @@
     <script type="module" src="./src/ux-guide.js?v=20260529-login-layout-1"></script>
     <script type="module" src="./src/sound-effects.js?v=20260602-reaction-polish-1"></script>
     <script type="module" src="./src/game-feel.js?v=20260602-reaction-polish-1"></script>
-    <script type="module" src="./src/quality-updates.js?v=20260530-playful-polish-1"></script>
+    <script type="module" src="./src/quality-updates.js?v=20260607-launch-polish-1"></script>
     <script type="module" src="./src/global-ranking.js?v=20260529-login-layout-1"></script>
     <script type="module" src="./src/user-account.js?v=20260529-guest-online-1"></script>
     <script>

@@ -4,7 +4,7 @@ body::before {
 
 .title-block {
   position: relative;
-  min-height: 760px;
+  min-height: 610px;
   padding: 18px 0 0;
   isolation: isolate;
 }
@@ -13,7 +13,7 @@ body::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 310px;
+  top: 220px;
   z-index: -1;
   width: min(100%, 620px);
   aspect-ratio: 120 / 103;
@@ -31,7 +31,7 @@ body::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 310px;
+  top: 220px;
   z-index: -1;
   width: min(100%, 620px);
   aspect-ratio: 120 / 103;
@@ -137,13 +137,13 @@ input[type="file"] {
 
 @media (max-width: 820px) {
   .title-block {
-    min-height: 620px;
+    min-height: 430px;
   }
 
   .title-block::before,
   .title-block::after {
     left: 0;
-    top: 238px;
+    top: 158px;
     width: min(100%, 560px);
   }
 

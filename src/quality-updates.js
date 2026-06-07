@@ -4,6 +4,7 @@ const LOCAL_RANKING_KEY = "customReversiLocalResults";
 const els = {
   name: document.querySelector("#playerNameInput"),
   resultPanel: document.querySelector("#resultPanel"),
+  resultBoard: document.querySelector("#resultBoardCanvas"),
   rankingList: document.querySelector("#rankingList"),
   shareResult: document.querySelector("#shareResultButton"),
   resultCard: document.querySelector(".result-card"),
@@ -107,15 +108,41 @@ function resultShareText() {
   return `${header}\n${rules}\n\n${result}\n\n${location.origin}${location.pathname}`;
 }
 
+function canvasToFile(canvas) {
+  return new Promise((resolve) => {
+    if (!canvas?.toBlob) return resolve(null);
+    canvas.toBlob((blob) => {
+      if (!blob) return resolve(null);
+      resolve(new File([blob], "custom-reversi-final-board.png", { type: "image/png" }));
+    }, "image/png", 0.95);
+  });
+}
+
+function downloadFinalBoard(file) {
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = file.name;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1200);
+}
+
 async function shareResult(event) {
   event.preventDefault();
   event.stopImmediatePropagation();
 
   const text = resultShareText();
   const url = `${location.origin}${location.pathname}`;
+  const imageFile = await canvasToFile(els.resultBoard);
+  const files = imageFile ? [imageFile] : [];
   if (navigator.share) {
     try {
-      await navigator.share({ title: "カスタム・リバーシの結果", text, url });
+      const payload = { title: "カスタム・リバーシの結果", text, url };
+      if (files.length && (!navigator.canShare || navigator.canShare({ files }))) payload.files = files;
+      await navigator.share(payload);
       return;
     } catch {
       // Fall back to copying if the user cancels or the browser refuses share.
@@ -123,6 +150,7 @@ async function shareResult(event) {
   }
 
   await navigator.clipboard?.writeText(text);
+  downloadFinalBoard(imageFile);
   const intent = new URL("https://twitter.com/intent/tweet");
   intent.searchParams.set("text", text);
   window.open(intent.toString(), "_blank", "noopener,noreferrer");

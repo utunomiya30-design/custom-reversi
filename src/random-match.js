@@ -68,6 +68,7 @@ const els = {
   play: document.querySelector("#playPanel"),
   result: document.querySelector("#resultPanel"),
   canvas: document.querySelector("#gameCanvas"),
+  resultCanvas: document.querySelector("#resultBoardCanvas"),
   turn: document.querySelector("#turnLabel"),
   log: document.querySelector("#moveLog"),
   scores: document.querySelector("#scoreRow"),
@@ -476,69 +477,111 @@ function renderScores(room) {
   }
 }
 
-function drawBoard(room) {
+function markerIndexes(size) {
+  const inner = Math.max(1, Math.floor(size / 4));
+  const outer = size - inner;
+  return inner === outer ? [inner] : [inner, outer];
+}
+
+function drawBoardSurface(targetCtx, width, height) {
+  const base = targetCtx.createLinearGradient(0, 0, width, height);
+  base.addColorStop(0, "#2d765b");
+  base.addColorStop(0.42, "#18553f");
+  base.addColorStop(1, "#0c3429");
+  targetCtx.fillStyle = base;
+  targetCtx.fillRect(0, 0, width, height);
+  const glow = targetCtx.createRadialGradient(width * 0.18, height * 0.16, 0, width * 0.18, height * 0.16, width * 0.82);
+  glow.addColorStop(0, "rgba(255, 255, 255, 0.18)");
+  glow.addColorStop(0.46, "rgba(255, 255, 255, 0.035)");
+  glow.addColorStop(1, "rgba(0, 0, 0, 0.22)");
+  targetCtx.fillStyle = glow;
+  targetCtx.fillRect(0, 0, width, height);
+}
+
+function drawBoard(room, canvas = els.canvas, showHints = true) {
+  const targetCtx = canvas?.getContext("2d");
+  if (!targetCtx || !room?.board) return;
   const size = room.rules.boardSize;
-  const cell = els.canvas.width / size;
-  ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
-  ctx.fillStyle = "rgba(32, 93, 71, 0.92)";
-  ctx.fillRect(0, 0, els.canvas.width, els.canvas.height);
-  ctx.strokeStyle = "rgba(255, 253, 247, 0.46)";
-  ctx.lineWidth = Math.max(1, Math.floor(cell * 0.02));
+  const width = canvas.width;
+  const height = canvas.height;
+  const cell = width / size;
+  targetCtx.clearRect(0, 0, width, height);
+  drawBoardSurface(targetCtx, width, height);
+  targetCtx.strokeStyle = "rgba(235, 226, 199, 0.58)";
+  targetCtx.lineWidth = Math.max(1, Math.floor(cell * 0.018));
 
   for (let line = 0; line <= size; line += 1) {
     const position = Math.round(line * cell) + 0.5;
-    ctx.beginPath();
-    ctx.moveTo(position, 0);
-    ctx.lineTo(position, els.canvas.height);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(0, position);
-    ctx.lineTo(els.canvas.width, position);
-    ctx.stroke();
+    targetCtx.beginPath();
+    targetCtx.moveTo(position, 0);
+    targetCtx.lineTo(position, height);
+    targetCtx.stroke();
+    targetCtx.beginPath();
+    targetCtx.moveTo(0, position);
+    targetCtx.lineTo(width, position);
+    targetCtx.stroke();
   }
 
-  const legalMoves = new Set(getLegalMoves(room.board, room.currentPlayer).map((move) => `${move.row},${move.col}`));
+  const dots = markerIndexes(size);
+  targetCtx.fillStyle = "rgba(246, 236, 205, 0.82)";
+  targetCtx.strokeStyle = "rgba(21, 55, 42, 0.42)";
+  for (const row of dots) {
+    for (const col of dots) {
+      targetCtx.beginPath();
+      targetCtx.arc(col * cell, row * cell, Math.max(3.2, cell * 0.045), 0, Math.PI * 2);
+      targetCtx.fill();
+      targetCtx.stroke();
+    }
+  }
+
+  const legalMoves = showHints ? new Set(getLegalMoves(room.board, room.currentPlayer).map((move) => `${move.row},${move.col}`)) : new Set();
   for (let row = 0; row < size; row += 1) {
     for (let col = 0; col < size; col += 1) {
       const player = room.board[row][col];
       const centerX = col * cell + cell / 2;
       const centerY = row * cell + cell / 2;
       if (player !== EMPTY) {
-        drawStone(centerX, centerY, cell * 0.38, PLAYER_COLORS[player], player === 2);
+        drawStone(targetCtx, centerX, centerY, cell * 0.38, PLAYER_COLORS[player], player === 2);
       } else if (legalMoves.has(`${row},${col}`)) {
-        drawLegalHint(centerX, centerY, cell * 0.13);
+        drawLegalHint(targetCtx, centerX, centerY, cell * 0.13);
       }
     }
   }
 }
 
-function drawStone(x, y, radius, color, isLight) {
+function drawStone(targetCtx, x, y, radius, color, isLight) {
   const coloredStoneLighting = {
     [PLAYER_COLORS[3]]: { highlight: "#ff9a9a", shadow: "#b40000", edge: "rgba(180, 0, 0, 0.28)" },
     [PLAYER_COLORS[4]]: { highlight: "#9fc3ff", shadow: "#003aa8", edge: "rgba(0, 58, 168, 0.28)" },
   };
   const lighting = coloredStoneLighting[color];
-  const gradient = ctx.createRadialGradient(x - radius * 0.32, y - radius * 0.36, radius * 0.1, x, y, radius);
+  targetCtx.save();
+  targetCtx.shadowColor = "rgba(0, 0, 0, 0.34)";
+  targetCtx.shadowBlur = radius * 0.18;
+  targetCtx.shadowOffsetY = radius * 0.08;
+  const gradient = targetCtx.createRadialGradient(x - radius * 0.32, y - radius * 0.36, radius * 0.1, x, y, radius);
   gradient.addColorStop(0, lighting?.highlight ?? (isLight ? "#ffffff" : "#5b5b5b"));
   gradient.addColorStop(0.58, color);
   gradient.addColorStop(1, lighting?.shadow ?? color);
-  ctx.fillStyle = gradient;
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = lighting?.edge ?? (isLight ? "rgba(0, 0, 0, 0.32)" : "rgba(0, 0, 0, 0.5)");
-  ctx.lineWidth = lighting ? 1.2 : 2.5;
-  ctx.stroke();
+  targetCtx.fillStyle = gradient;
+  targetCtx.beginPath();
+  targetCtx.arc(x, y, radius, 0, Math.PI * 2);
+  targetCtx.fill();
+  targetCtx.restore();
+  targetCtx.strokeStyle = lighting?.edge ?? (isLight ? "rgba(0, 0, 0, 0.32)" : "rgba(0, 0, 0, 0.5)");
+  targetCtx.lineWidth = lighting ? 1.2 : 2.5;
+  targetCtx.stroke();
 }
 
-function drawLegalHint(x, y, radius) {
-  ctx.fillStyle = "rgba(255, 253, 247, 0.62)";
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.fill();
+function drawLegalHint(targetCtx, x, y, radius) {
+  targetCtx.fillStyle = "rgba(255, 246, 216, 0.68)";
+  targetCtx.beginPath();
+  targetCtx.arc(x, y, radius, 0, Math.PI * 2);
+  targetCtx.fill();
 }
 
 function renderResult(room) {
+  drawBoard(room, els.resultCanvas, false);
   const values = room.rules.winMode === "score"
     ? scoreBoard(room.board, room.rules.playerCount, createScoreMap(room.rules.boardSize))
     : countStones(room.board, room.rules.playerCount);

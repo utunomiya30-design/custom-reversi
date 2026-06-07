@@ -182,6 +182,16 @@ input[type="text"] {
   box-shadow: var(--premium-shadow);
 }
 
+.title-block h1 {
+  max-width: 9.5em;
+  font-size: clamp(1.8rem, 3.8vw, 3.2rem);
+  line-height: 1.08;
+}
+
+.title-block p[data-i18n="lead"] {
+  max-width: 28rem;
+}
+
 .setup-intro {
   grid-column: 1 / -1;
   padding: 14px 16px;
@@ -192,6 +202,48 @@ input[type="text"] {
   font-size: 0.94rem;
   font-weight: 750;
   line-height: 1.7;
+}
+
+.actions .primary-button {
+  flex: 1 1 260px;
+  min-height: 62px;
+  font-size: 1.14rem;
+  letter-spacing: 0;
+}
+
+.actions #shareRuleButton {
+  flex: 1 1 180px;
+}
+
+.advanced-settings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  padding: 14px;
+  border: 1px solid rgba(91, 76, 52, 0.16);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 253, 247, 0.78), rgba(244, 234, 216, 0.72));
+}
+
+.advanced-settings-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  grid-column: 1 / -1;
+}
+
+.advanced-settings-head span {
+  color: var(--green-dark);
+  font-size: 0.76rem;
+  font-weight: 950;
+}
+
+.advanced-settings-head strong {
+  color: var(--ink);
+  font-size: 0.92rem;
 }
 
 .quick-presets {
@@ -460,16 +512,25 @@ input[type="text"] {
 .board-wrap {
   border: 8px solid #2d2418;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.09), rgba(0, 0, 0, 0.2)),
-    #17392e;
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.22)),
+    linear-gradient(180deg, #4a3422, #21170f);
   box-shadow:
     0 26px 58px rgba(25, 20, 14, 0.24),
     0 1px 0 rgba(255, 255, 255, 0.25) inset,
     0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  transition: box-shadow 0.28s ease, transform 0.28s ease;
 }
 
 .board-wrap.is-board-pulse {
-  animation: board-pulse 0.42s ease-out;
+  animation: board-pulse 0.58s ease-out;
+}
+
+.board-wrap canvas {
+  transition: filter 0.24s ease, transform 0.24s ease;
+}
+
+.board-wrap.is-board-pulse canvas {
+  animation: board-soft-settle 0.42s ease-out;
 }
 
 .move-log,
@@ -539,6 +600,39 @@ input[type="text"] {
   border-color: rgba(91, 76, 52, 0.2);
   background: linear-gradient(180deg, #fffefb, #f9f2e6);
   box-shadow: var(--premium-shadow);
+}
+
+.top-panel:not(.is-hidden),
+.play-panel:not(.is-hidden),
+.result-panel:not(.is-hidden) {
+  animation: panel-enter 0.34s ease-out both;
+}
+
+.final-board-panel {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 16px;
+  padding: 14px;
+  border: 1px solid rgba(91, 76, 52, 0.18);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f8f0e2, #eee1cd);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+}
+
+.final-board-panel strong {
+  color: var(--green-dark);
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+#resultBoardCanvas {
+  width: min(100%, 360px);
+  height: auto;
+  justify-self: center;
+  border: 6px solid #2d2418;
+  border-radius: 8px;
+  background: #17392e;
+  box-shadow: 0 18px 38px rgba(36, 29, 19, 0.18);
 }
 
 .result-spotlight {
@@ -931,8 +1025,25 @@ input[type="text"] {
 }
 
 @keyframes board-pulse {
-  0% { box-shadow: 0 26px 58px rgba(25, 20, 14, 0.24), 0 0 0 0 rgba(200, 141, 40, 0.42); }
-  100% { box-shadow: 0 26px 58px rgba(25, 20, 14, 0.24), 0 0 0 18px rgba(200, 141, 40, 0); }
+  0% { box-shadow: 0 26px 58px rgba(25, 20, 14, 0.24), 0 0 0 0 rgba(200, 141, 40, 0.34); }
+  100% { box-shadow: 0 26px 58px rgba(25, 20, 14, 0.24), 0 0 0 16px rgba(200, 141, 40, 0); }
+}
+
+@keyframes board-soft-settle {
+  0% { filter: brightness(1.08) saturate(1.04); transform: scale(1.003); }
+  100% { filter: brightness(1) saturate(1); transform: scale(1); }
+}
+
+@keyframes panel-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes result-burst {
@@ -995,6 +1106,11 @@ input[type="text"] {
 
   .settings-grid {
     box-shadow: 0 16px 36px rgba(36, 29, 19, 0.12);
+  }
+
+  .advanced-settings {
+    grid-template-columns: 1fr;
+    padding: 12px;
   }
 
   .game-feel-hud {
