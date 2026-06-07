@@ -22,10 +22,10 @@ const BGM_STYLES = [
     label: "クラシック風",
     bpm: 88,
     wave: "triangle",
-    volume: 0.048,
-    leadGain: 0.014,
-    bassGain: 0.008,
-    chordGain: 0.0048,
+    volume: 0.62,
+    leadGain: 0.017,
+    bassGain: 0.012,
+    chordGain: 0.007,
     lead: ["C5", "E5", "G5", "E5", "F5", "A5", "C6", "A5", "G5", "B4", "D5", "B4", "E5", "G5", "C6", "G5"],
     bass: ["C3", null, "G2", null, "F3", null, "C3", null, "A2", null, "E3", null, "G2", null, "C3", null],
     chords: [["C4", "E4", "G4"], ["F4", "A4", "C5"], ["A3", "C4", "E4"], ["G3", "B3", "D4"]],
@@ -35,10 +35,10 @@ const BGM_STYLES = [
     label: "ゲームセンター風",
     bpm: 140,
     wave: "square",
-    volume: 0.04,
-    leadGain: 0.009,
-    bassGain: 0.007,
-    chordGain: 0.003,
+    volume: 0.52,
+    leadGain: 0.016,
+    bassGain: 0.012,
+    chordGain: 0.006,
     lead: ["C5", "G5", "C6", "G5", "D#5", "A#5", "D#6", "A#5", "F5", "C6", "F6", "C6", "G5", "D6", "G6", "D6"],
     bass: ["C3", "C3", null, "C3", "D#3", "D#3", null, "D#3", "F3", "F3", null, "F3", "G3", "G3", null, "G3"],
     chords: [["C4", "D#4", "G4"], ["D#4", "G4", "A#4"], ["F4", "A4", "C5"], ["G4", "B4", "D5"]],
@@ -50,10 +50,10 @@ const BGM_STYLES = [
     bpm: 112,
     wave: "sine",
     swing: 0.22,
-    volume: 0.05,
-    leadGain: 0.012,
-    bassGain: 0.009,
-    chordGain: 0.005,
+    volume: 0.58,
+    leadGain: 0.017,
+    bassGain: 0.013,
+    chordGain: 0.008,
     lead: ["E5", "G5", "A5", null, "A#5", "A5", "G5", "E5", "D5", "F5", "G5", null, "B4", "D5", "E5", null],
     bass: ["C3", "E3", "G3", "A3", "F3", "A3", "C4", "A3", "D3", "F3", "A3", "C4", "G2", "B2", "D3", "F3"],
     chords: [["C4", "E4", "G4", "A#4"], ["F3", "A3", "C4", "E4"], ["D4", "F4", "A4", "C5"], ["G3", "B3", "D4", "F4"]],
@@ -63,10 +63,10 @@ const BGM_STYLES = [
     label: "和楽器風",
     bpm: 96,
     wave: "triangle",
-    volume: 0.046,
-    leadGain: 0.013,
-    bassGain: 0.006,
-    chordGain: 0.0025,
+    volume: 0.58,
+    leadGain: 0.018,
+    bassGain: 0.01,
+    chordGain: 0.005,
     lead: ["C5", null, "D5", "F5", "G5", null, "A5", "G5", "F5", null, "D5", "C5", "G4", null, "A4", "C5"],
     bass: ["C3", null, null, null, "G2", null, null, null, "F3", null, null, null, "C3", null, null, null],
     chords: [["C4", "F4", "G4"], ["D4", "G4", "A4"], ["F4", "G4", "C5"], ["C4", "D4", "G4"]],
@@ -78,10 +78,10 @@ const BGM_STYLES = [
     bpm: 104,
     wave: "triangle",
     swing: 0.12,
-    volume: 0.05,
-    leadGain: 0.011,
-    bassGain: 0.007,
-    chordGain: 0.0042,
+    volume: 0.56,
+    leadGain: 0.017,
+    bassGain: 0.012,
+    chordGain: 0.007,
     lead: ["E5", "G5", "A5", "C6", "A5", "G5", "E5", null, "D5", "F5", "G5", "B5", "G5", "F5", "D5", null],
     bass: ["C3", null, "G2", null, "A2", null, "E3", null, "F3", null, "C3", null, "G2", null, "C3", null],
     chords: [["C4", "E4", "G4", "A4"], ["A3", "C4", "E4", "G4"], ["F4", "A4", "C5"], ["G3", "B3", "D4"]],
@@ -334,6 +334,12 @@ function syncBgmToGame(forceNew = false) {
   }
 }
 
+function unlockAndSyncBgm() {
+  unlockAudio().then(() => {
+    if (isGameActive()) syncBgmToGame();
+  });
+}
+
 async function tone(options) {
   const ctx = await unlockAudio();
   if (!ctx) return;
@@ -415,6 +421,7 @@ function observeGameEvents() {
     unlockAudio().then(() => {
       playSound("start");
       startBgm(true);
+      window.setTimeout(() => syncBgmToGame(true), 120);
     });
   });
 
@@ -424,10 +431,10 @@ function observeGameEvents() {
 
   backButton?.addEventListener("click", () => stopBgm());
 
-  document.addEventListener("pointerdown", unlockAudio, { passive: true });
-  document.addEventListener("touchstart", unlockAudio, { passive: true });
-  document.addEventListener("click", unlockAudio, { passive: true });
-  document.addEventListener("keydown", unlockAudio);
+  document.addEventListener("pointerdown", unlockAndSyncBgm, { passive: true });
+  document.addEventListener("touchstart", unlockAndSyncBgm, { passive: true });
+  document.addEventListener("click", unlockAndSyncBgm, { passive: true });
+  document.addEventListener("keydown", unlockAndSyncBgm);
 
   if (moveLog) {
     new MutationObserver(() => {
