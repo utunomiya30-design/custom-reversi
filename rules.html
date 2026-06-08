@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="カスタム・リバーシのルール設計ノート。多人数戦の初期配置、反転処理、勝利条件、オンライン対戦で同期する情報について説明します。">
+    <meta name="google-adsense-account" content="ca-pub-1361559686394936">
+    <link rel="canonical" href="https://utunomiya30-design.github.io/custom-reversi/rules.html">
+    <title>ルール設計 | カスタム・リバーシ</title>
+    <link rel="stylesheet" href="./styles.css?v=soft-bg-clear-20260517">
+    <link rel="stylesheet" href="./site-compliance.css?v=20260608-adsense-ready-1">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1361559686394936" crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <nav class="site-nav" aria-label="サイト内メニュー">
+      <a class="site-brand" href="./">Custom Reversi</a>
+      <div class="site-links">
+        <a href="./">ゲーム</a>
+        <a href="./guide.html">遊び方</a>
+        <a href="./strategy.html">戦略ガイド</a>
+        <a href="./rules.html">ルール設計</a>
+        <a href="./modes.html">おすすめ設定</a>
+        <a href="./faq.html">FAQ</a>
+        <a href="./about.html">サイト情報</a>
+        <a href="./contact.html">お問い合わせ</a>
+        <a href="./privacy.html">プライバシー</a>
+      </div>
+    </nav>
+
+    <main class="page-shell">
+      <p class="kicker">Rule Design</p>
+      <h1>ルール設計</h1>
+      <p class="page-lead">カスタム・リバーシは、通常のリバーシをそのまま大きくするだけではなく、多人数でも初手から誰かが極端に不利にならないように初期配置と反転処理を調整しています。このページでは、ゲーム内で採用している設計方針をまとめます。</p>
+
+      <section>
+        <h2>多人数戦の初期配置</h2>
+        <p>2人戦では標準的な中央4枚の配置を使います。3人戦では、中央4x4の範囲に各プレイヤーが同じ枚数の石を持つように配置します。4人戦では、各プレイヤーが4枚ずつ持った状態で始めます。これは、3人以上で中央に少数の石だけを置くと、初手や2手目で特定の色だけが消えやすくなるためです。</p>
+        <p>盤面サイズが4x4、6x6、8x8、12x12、16x16のどれであっても、最初の争点は中央付近に置きます。大きい盤面でも開始直後に端や角だけで勝負が決まらないようにし、序盤は中央の勢力争い、終盤は角や辺をめぐる読み合いへ移っていく流れを目指しています。</p>
+      </section>
+
+      <section>
+        <h2>反転処理の考え方</h2>
+        <p>通常のリバーシでは、相手の色を自分の色で挟むと、その間の石を反転します。カスタム・リバーシの多人数戦では、間に複数の相手色が混ざっていても、自分の石で挟めていればすべて自分の色に変わります。例えば赤の石で、白、黒、青が並ぶ列を挟んだ場合、その白、黒、青はすべて赤になります。</p>
+        <p>この処理により、3人戦や4人戦でも「どの色を挟むか」を個別に考えすぎず、直線上で自分の石へ到達できるかを見れば判断できます。一方で、次の手番のプレイヤーが大きく取り返せる形も増えるため、単純に多く返す手が常に強いとは限りません。</p>
+      </section>
+
+      <section>
+        <h2>勝利条件の違い</h2>
+        <div class="info-grid">
+          <div class="info-card"><strong>通常</strong><p>終了時に石が最も多いプレイヤーが勝ちます。基本を学びたい場合や、標準的な読み合いを楽しみたい場合に向いています。</p></div>
+          <div class="info-card"><strong>逆転</strong><p>終了時に石が少ないプレイヤーが勝ちます。ただし石が0枚になると脱落扱いです。取りすぎを避ける判断が重要になります。</p></div>
+          <div class="info-card"><strong>スコア</strong><p>マスごとの点数で競います。角は高得点、角の隣はマイナス点になるため、石数だけでは勝敗を判断できません。</p></div>
+          <div class="info-card"><strong>角スタート</strong><p>指定したプレイヤーを救済するため、開始時点で角に石を置けます。初心者や不利な席を補正したいときに使います。</p></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>オンライン対戦で同期する情報</h2>
+        <p>オンライン対戦では、盤面、現在の手番、部屋コード、参加人数、勝利条件、プレイヤー名など、対戦の進行に必要な情報だけをFirebase Realtime Databaseで同期します。背景画像や駒に貼った画像はサーバーに保存せず、各ブラウザ内で表示します。</p>
+        <p>ランダムマッチは、待機中の相手がいる場合、その相手が作った部屋へ参加する方式です。同じ設定の相手だけを探すと待ち時間が長くなるため、先に待っている相手のルールで始めることで、遊び始めるまでの時間を短くしています。</p>
+      </section>
+
+      <section>
+        <h2>今後調整したい点</h2>
+        <p>多人数戦は標準的な2人リバーシより展開が大きく変わるため、初期配置、CPUの判断、スコア配分はプレイ結果を見ながら継続して調整します。特定の盤面サイズや人数で極端に有利・不利な展開が見つかった場合は、配置や点数を見直して、短時間でも納得感のある対戦になるよう改善します。</p>
+      </section>
+
+      <p class="update-note">最終更新日: 2026年6月8日</p>
+    </main>
+
+    <footer class="site-footer">
+      <span>© 2026 Custom Reversi</span>
+      <span><a href="./privacy.html">プライバシーポリシー</a> / <a href="./contact.html">お問い合わせ</a></span>
+    </footer>
+    <script src="./site-compliance.js?v=20260608-adsense-ready-1"></script>
+  </body>
+</html>
