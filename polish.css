@@ -1591,6 +1591,12 @@ button:hover:not(:disabled) {
 }
 
 @media (max-width: 820px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   .app-shell {
     width: min(100% - 20px, 680px);
   }
@@ -1600,15 +1606,47 @@ button:hover:not(:disabled) {
   }
 
   .top-panel {
+    grid-template-columns: minmax(0, 1fr);
     gap: 20px;
   }
 
+  .title-block {
+    min-height: clamp(510px, 142vw, 570px);
+  }
+
+  .title-block::before,
+  .title-block::after {
+    top: clamp(210px, 56vw, 238px);
+    width: 100%;
+  }
+
   .title-block h1 {
+    max-width: calc(100vw - 44px);
     font-size: clamp(1.08rem, 6vw, 1.48rem);
   }
 
   .title-block p[data-i18n="lead"] {
+    max-width: calc(100vw - 44px);
     font-size: 0.92rem;
+  }
+
+  .account-panel,
+  .settings-grid,
+  .online-panel,
+  .advanced-settings,
+  .homepage-content {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .account-panel {
+    margin: 0 0 16px;
+  }
+
+  .homepage-content {
+    width: min(100% - 20px, 680px);
+    margin-top: 20px;
   }
 
   .language-dock {

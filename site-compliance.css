@@ -194,6 +194,18 @@ body::after {
 }
 
 @media (max-width: 720px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .site-nav,
+  .site-footer,
+  .page-shell {
+    width: min(100% - 20px, 680px);
+  }
+
   .site-nav {
     align-items: flex-start;
     flex-direction: column;
