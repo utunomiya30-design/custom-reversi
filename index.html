@@ -37,10 +37,10 @@
         "genre": ["Board game", "Strategy"]
       }
     </script>
-    <link rel="stylesheet" href="./styles.css?v=20260609-mobile-fix-1">
-    <link rel="stylesheet" href="./top-art.css?v=20260609-mobile-fix-1">
-    <link rel="stylesheet" href="./polish.css?v=20260609-mobile-fix-1">
-    <link rel="stylesheet" href="./site-compliance.css?v=20260609-mobile-fix-1">
+    <link rel="stylesheet" href="./styles.css?v=20260609-collapse-1">
+    <link rel="stylesheet" href="./top-art.css?v=20260609-collapse-1">
+    <link rel="stylesheet" href="./polish.css?v=20260609-collapse-1">
+    <link rel="stylesheet" href="./site-compliance.css?v=20260609-collapse-1">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1361559686394936" crossorigin="anonymous"></script>
     <script>
       window.CUSTOM_REVERSI_ADS = {
@@ -85,16 +85,22 @@
             <button type="button" id="googleSignInButton">Googleでログイン</button>
             <button type="button" id="signOutButton" class="is-hidden">ログアウト</button>
           </div>
-          <div class="account-stats is-hidden" id="accountStats">
-            <div><span>対戦</span><strong id="statGames">0</strong></div>
-            <div><span>勝利</span><strong id="statWins">0</strong></div>
-            <div><span>勝率</span><strong id="statWinRate">0%</strong></div>
-            <div><span>最高</span><strong id="statBestScore">0</strong></div>
-          </div>
-          <div class="match-history is-hidden" id="matchHistoryPanel">
-            <strong>最近の対戦</strong>
-            <ol id="matchHistoryList"></ol>
-          </div>
+          <details class="stats-disclosure collapsible-section is-hidden" id="accountStatsDisclosure">
+            <summary class="collapsible-summary">
+              <span>戦績</span>
+              <strong>対戦・勝利・勝率を見る</strong>
+            </summary>
+            <div class="account-stats is-hidden" id="accountStats">
+              <div><span>対戦</span><strong id="statGames">0</strong></div>
+              <div><span>勝利</span><strong id="statWins">0</strong></div>
+              <div><span>勝率</span><strong id="statWinRate">0%</strong></div>
+              <div><span>最高</span><strong id="statBestScore">0</strong></div>
+            </div>
+            <div class="match-history is-hidden" id="matchHistoryPanel">
+              <strong>最近の対戦</strong>
+              <ol id="matchHistoryList"></ol>
+            </div>
+          </details>
         </section>
 
         <form class="settings-grid" id="settingsForm">
@@ -146,29 +152,33 @@
             <button type="button" id="shareRuleButton" data-i18n="shareRuleButton">このルールをシェア</button>
           </div>
 
-          <div class="online-panel">
-            <div>
-              <strong data-i18n="onlineTitle">オンライン部屋</strong>
+          <details class="online-panel collapsible-section">
+            <summary class="collapsible-summary">
+              <span data-i18n="onlineTitle">オンライン部屋</span>
+              <strong>部屋作成・ランダムマッチ</strong>
+            </summary>
+            <div class="collapsible-body online-panel-body">
               <p data-i18n="onlineLead">部屋を作ってURLを共有すると、別タブや別ブラウザから参加できます。</p>
+              <div class="online-actions">
+                <button type="button" id="createRoomButton" data-i18n="createRoomButton">部屋を作る</button>
+                <button type="button" id="randomMatchButton">ランダムマッチ</button>
+                <button type="button" id="cancelRandomMatchButton" class="is-hidden">マッチングをやめる</button>
+                <label class="room-code-field">
+                  <span data-i18n="roomCodeLabel">部屋コード</span>
+                  <input id="roomCodeInput" type="text" inputmode="latin" autocomplete="off" maxlength="12">
+                </label>
+                <button type="button" id="joinRoomButton" data-i18n="joinRoomButton">参加する</button>
+              </div>
+              <p class="online-status" id="onlineStatus" aria-live="polite"></p>
             </div>
-            <div class="online-actions">
-              <button type="button" id="createRoomButton" data-i18n="createRoomButton">部屋を作る</button>
-              <button type="button" id="randomMatchButton">ランダムマッチ</button>
-              <button type="button" id="cancelRandomMatchButton" class="is-hidden">マッチングをやめる</button>
-              <label class="room-code-field">
-                <span data-i18n="roomCodeLabel">部屋コード</span>
-                <input id="roomCodeInput" type="text" inputmode="latin" autocomplete="off" maxlength="12">
-              </label>
-              <button type="button" id="joinRoomButton" data-i18n="joinRoomButton">参加する</button>
-            </div>
-            <p class="online-status" id="onlineStatus" aria-live="polite"></p>
-          </div>
+          </details>
 
-          <section class="advanced-settings" aria-label="詳細カスタム">
-            <div class="advanced-settings-head">
+          <details class="advanced-settings collapsible-section" aria-label="詳細カスタム">
+            <summary class="advanced-settings-head collapsible-summary">
               <span>詳細カスタム</span>
               <strong>ルールや見た目を変える</strong>
-            </div>
+            </summary>
+            <div class="advanced-settings-body">
 
             <section class="quick-presets" id="quickPresets" aria-label="おすすめモード">
               <div class="quick-presets-head">
@@ -228,7 +238,8 @@
               <span>駒画像</span>
               <input id="pieceImageInput" type="file" accept="image/png,image/jpeg,image/webp">
             </label>
-          </section>
+            </div>
+          </details>
         </form>
       </section>
 
@@ -315,7 +326,7 @@
     <script type="module" src="./src/game-feel.js?v=20260602-reaction-polish-1"></script>
     <script type="module" src="./src/quality-updates.js?v=20260607-launch-polish-1"></script>
     <script type="module" src="./src/global-ranking.js?v=20260529-login-layout-1"></script>
-    <script type="module" src="./src/user-account.js?v=20260529-guest-online-1"></script>
+    <script type="module" src="./src/user-account.js?v=20260609-collapse-1"></script>
     <script>
       (() => {
         const setupPanel = document.querySelector("#setupPanel");

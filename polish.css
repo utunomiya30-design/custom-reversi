@@ -1567,6 +1567,110 @@ button:hover:not(:disabled) {
   box-shadow: 0 18px 38px rgba(24, 22, 18, 0.16);
 }
 
+.collapsible-section {
+  min-width: 0;
+}
+
+.collapsible-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.collapsible-summary::-webkit-details-marker {
+  display: none;
+}
+
+.collapsible-summary::before {
+  content: "▶";
+  display: inline-grid;
+  width: 1.5em;
+  height: 1.5em;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(55, 45, 31, 0.18);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fffdf8, #f4ead8);
+  color: var(--green-dark);
+  font-size: 0.78rem;
+  font-weight: 950;
+  line-height: 1;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.collapsible-section[open] > .collapsible-summary::before {
+  content: "▼";
+  border-color: rgba(15, 75, 60, 0.36);
+  background: linear-gradient(180deg, #eaf7ef, #dcecdf);
+}
+
+.collapsible-summary span {
+  color: var(--green-dark);
+  font-size: 0.76rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.collapsible-summary strong {
+  margin-left: auto;
+  color: var(--ink);
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+.collapsible-summary:hover::before {
+  border-color: rgba(15, 75, 60, 0.48);
+}
+
+.stats-disclosure {
+  display: grid;
+  gap: 10px;
+  padding-top: 2px;
+  border-top: 1px solid rgba(55, 45, 31, 0.12);
+}
+
+.stats-disclosure[open] {
+  gap: 12px;
+}
+
+.stats-disclosure .account-stats,
+.stats-disclosure .match-history {
+  margin-top: 0;
+}
+
+.online-panel.collapsible-section,
+.advanced-settings.collapsible-section {
+  display: block;
+  grid-column: 1 / -1;
+}
+
+.online-panel.collapsible-section,
+.advanced-settings.collapsible-section {
+  padding: 14px;
+}
+
+.online-panel-body {
+  display: grid;
+  gap: 12px;
+  padding-top: 10px;
+}
+
+.advanced-settings-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding-top: 12px;
+}
+
+.advanced-settings-body > .quick-presets {
+  grid-column: 1 / -1;
+}
+
 .homepage-content {
   margin-top: 10px;
 }
@@ -1647,6 +1751,10 @@ button:hover:not(:disabled) {
   .homepage-content {
     width: min(100% - 20px, 680px);
     margin-top: 20px;
+  }
+
+  .advanced-settings-body {
+    grid-template-columns: 1fr;
   }
 
   .language-dock {

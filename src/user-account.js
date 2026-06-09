@@ -42,6 +42,7 @@ const els = {
   signIn: document.querySelector("#googleSignInButton"),
   signOut: document.querySelector("#signOutButton"),
   status: document.querySelector("#authStatus"),
+  statsDisclosure: document.querySelector("#accountStatsDisclosure"),
   stats: document.querySelector("#accountStats"),
   games: document.querySelector("#statGames"),
   wins: document.querySelector("#statWins"),
@@ -148,8 +149,10 @@ function updateAuthUi(user) {
   currentUser = isGuest ? null : user;
   els.signIn?.classList.toggle("is-hidden", Boolean(user && !isGuest));
   els.signOut?.classList.toggle("is-hidden", !user);
+  els.statsDisclosure?.classList.toggle("is-hidden", !user || isGuest);
   els.stats?.classList.toggle("is-hidden", !user || isGuest);
   els.historyPanel?.classList.toggle("is-hidden", !user || isGuest);
+  if (els.statsDisclosure && (!user || isGuest)) els.statsDisclosure.open = false;
 
   if (!user) {
     if (els.status) els.status.textContent = "Googleログインすると、自分の戦績と最近の対戦履歴を保存できます。";
