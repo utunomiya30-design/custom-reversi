@@ -37,10 +37,10 @@
         "genre": ["Board game", "Strategy"]
       }
     </script>
-    <link rel="stylesheet" href="./styles.css?v=20260609-collapse-1">
-    <link rel="stylesheet" href="./top-art.css?v=20260609-collapse-1">
-    <link rel="stylesheet" href="./polish.css?v=20260609-collapse-1">
-    <link rel="stylesheet" href="./site-compliance.css?v=20260609-collapse-1">
+    <link rel="stylesheet" href="./styles.css?v=20260819-engagement-3">
+    <link rel="stylesheet" href="./top-art.css?v=20260819-engagement-3">
+    <link rel="stylesheet" href="./polish.css?v=20260819-engagement-3">
+    <link rel="stylesheet" href="./site-compliance.css?v=20260819-engagement-3">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1361559686394936" crossorigin="anonymous"></script>
     <script>
       window.CUSTOM_REVERSI_ADS = {
@@ -105,8 +105,25 @@
 
         <form class="settings-grid" id="settingsForm">
           <div class="setup-intro" id="setupIntro">
-            盤面サイズ、人数、勝利条件を自由に変えて遊べるリバーシです。ランダムマッチでは先に待っている相手のルールに自動で合わせて、すぐにオンライン対戦できます。
+            迷ったら「今日の挑戦」から。すぐに一局始めて、慣れたら人数や盤面を自由に変えられます。
           </div>
+
+          <section class="quick-launch-panel" id="quickLaunchPanel" aria-labelledby="quickLaunchTitle">
+            <div class="quick-launch-copy">
+              <span class="quick-launch-kicker">Play now</span>
+              <h2 id="quickLaunchTitle">今日の一局</h2>
+              <p id="dailyChallengeText">毎日変わるルールでCPUに挑戦。1Pで1位を目指そう。</p>
+            </div>
+            <div class="daily-progress" aria-live="polite">
+              <span id="dailyChallengeStatus">本日は未達成</span>
+              <strong id="dailyStreak">連続 0日</strong>
+            </div>
+            <div class="quick-launch-actions">
+              <button type="button" id="dailyChallengeButton" class="primary-button">今日の挑戦を始める</button>
+              <button type="button" id="quickCpuButton">CPUとすぐ遊ぶ</button>
+              <button type="button" id="randomChaosButton">おまかせカオス</button>
+            </div>
+          </section>
 
           <label>
             <span data-i18n="languageLabel">Language</span>
@@ -244,6 +261,11 @@
       </section>
 
       <section class="play-panel is-hidden" id="playPanel" aria-label="プレイ画面" data-i18n-aria="playAria">
+        <aside class="challenge-mission is-hidden" id="challengeMission" aria-live="polite">
+          <span>Today's challenge</span>
+          <strong id="challengeMissionTitle">1Pで1位を目指そう</strong>
+          <small id="challengeMissionRules"></small>
+        </aside>
         <header class="game-header">
           <div>
             <p class="kicker" data-i18n="nowPlaying">Now playing</p>
@@ -327,6 +349,7 @@
     <script type="module" src="./src/quality-updates.js?v=20260607-launch-polish-1"></script>
     <script type="module" src="./src/global-ranking.js?v=20260529-login-layout-1"></script>
     <script type="module" src="./src/user-account.js?v=20260609-collapse-1"></script>
+    <script type="module" src="./src/engagement.js?v=20260819-engagement-3"></script>
     <script>
       (() => {
         const setupPanel = document.querySelector("#setupPanel");
